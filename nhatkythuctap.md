@@ -34,3 +34,12 @@
 **Nội dung công việc**
 - Tiếp tục ôn tập, tìm hiểu lại nội dung liên quan tới Git
 - Làm các công việc được giao của cơ sở thực tập  
+## Ngày 9/6/2026
+**Nội dung công việc**
+- Tiếp tục ôn tập, tìm hiểu lại nội dung liên quan tới Git
+- Làm các công việc được giao của cơ sở thực tập  
+## Ngày 10/6/2026
+**Nội dung công việc**
+- Tiếp tục ôn tập, tìm hiểu lại nội dung liên quan tới Git
+- Làm 1 vài dự án như báo cáo thực tập rồi sử dụng kiến thức mình đã học để làm project Git
+- Làm các công việc được giao của cơ sở thực tập  
