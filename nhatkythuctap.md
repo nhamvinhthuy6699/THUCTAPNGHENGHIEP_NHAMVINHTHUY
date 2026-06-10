@@ -25,8 +25,12 @@
 ### Ngày 4/6/2026
 **Nội dung công việc**
 - Ôn tập, tìm hiểu lại nội dung liên quan tới Git
-- Làm quen với các thao tác quản lý mã nguồn như khởi tạo repository, commit và push dữ liệu
+- Làm các công việc được giao của cơ sở thực tập  
 ### Ngày 5/6/2026
+**Nội dung công việc**
+- Tiếp tục ôn tập, tìm hiểu lại nội dung liên quan tới Git
+- Làm các công việc được giao của cơ sở thực tập  
+## Ngày 8/6/2026
 **Nội dung công việc**
 - Tiếp tục ôn tập, tìm hiểu lại nội dung liên quan tới Git
 - Làm các công việc được giao của cơ sở thực tập  

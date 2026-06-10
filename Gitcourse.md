@@ -806,3 +806,2153 @@ Màn hình sẽ trả về kết quả chính xác theo định dạng:
 .gitignore : 3 : *.log debug.log
 
 Ý nghĩa: File debug.log đang bị chặn bởi file .gitignore ở thư mục gốc, tại dòng số 3, do quy tắc *.log quy định. Biết được dòng nào rồi, bạn chỉ cần mở file ra sửa hoặc xóa dòng đó đi là xong!
+
+
+## INSPECTING A REPOSITORY
+### Kiểm tra mức độ Dự án (Project Level)
+#### A. git log - Nhật ký dòng thời gian
+
+Lệnh này hiển thị danh sách các commit ngược dòng thời gian (từ mới nhất đến cũ nhất). Nó cho bạn biết ai đã làm gì vào lúc nào trên toàn bộ dự án.
+
+Bản chất: Git lội qua các con trỏ commit nối đuôi nhau bằng mã băm SHA-1 để dựng lại lịch sử.
+
+Các lệnh chi tiết cần thuộc lòng:
+
+#### Các lệnh git log phổ biến
+
+| Lệnh | Mục đích sử dụng | Kết quả hiển thị |
+|------|------------------|------------------|
+| `git log` | Xem nhật ký mặc định. | Hiện đầy đủ Mã băm, Tác giả, Ngày giờ, Lời nhắn. |
+| `git log --oneline` | Xem lịch sử rút gọn. | Mỗi commit hiển thị trên 1 dòng gồm 7 ký tự đầu mã băm và tiêu đề lời nhắn. Rất dễ nhìn. |
+| `git log -n <số>` | Giới hạn số lượng commit. | Chỉ hiển thị đúng `<số>` commit gần nhất (Ví dụ: `git log -n 5`). |
+| `git log --p <tên_file>` | Xem lịch sử của file. | Hiển thị các commit có tác động đến file này, kèm chi tiết code bị sửa bên trong. |
+| `git log --graph --oneline --all` | Vẽ sơ đồ nhánh. | Hiển thị dòng thời gian dạng đồ thị nhánh (nhìn rõ các nhánh rẽ và gộp vào nhau). |
+
+
+### Kiểm tra mức độ Thư mục & Hàng chờ (Index Level)
+
+#### A. git status - Gương soi trạng thái
+Lệnh này kiểm tra sự sai lệch dữ liệu giữa Thư mục làm việc (màn hình code), Hàng chờ Staging Area và Commit gần nhất (HEAD).
+
+Các trạng thái file Git trả về:
+
+Changes to be committed: File đã nằm trong Staging Area (màu xanh), sẵn sàng để commit.
+
+Changes not staged for commit: File cũ có sửa đổi nhưng chưa gõ git add (màu đỏ).
+
+Untracked files: File mới tinh chưa từng khai báo với Git (màu đỏ).
+
+#### B. git diff - Kính hiển vi soi ký tự
+Dùng để so sánh chi tiết nội dung văn bản giữa các trạng thái dữ liệu.
+
+Quy trình đọc hiểu thông số diff thô:
+
+--- a/file.txt: Trạng thái cũ (Gắn dấu trừ -, chữ màu đỏ là code bị xóa).
+
++++ b/file.txt: Trạng thái mới (Gắn dấu cộng +, chữ màu xanh là code được thêm).
+
+@@ -34,6 +34,8 @@: Đoạn code thay đổi bắt đầu từ dòng 34 của file cũ (kéo dài 6 dòng) và biến thành dòng 34 của file mới (kéo dài 8 dòng).
+
+#### Các lệnh nâng cao của git diff:
+
+git diff: Xem những gì vừa gõ thêm trên màn hình nhưng chưa git add.
+
+git diff --staged (hoặc --cached): Xem những gì đã git add thành công để chuẩn bị commit.
+
+git diff branch1..branch2: So sánh ngọn mới nhất của 2 nhánh.
+
+git diff branch1...branch2: Tìm điểm chung lúc mới tách nhánh để xem từ đó đến nay branch2 đã viết thêm những gì.
+
+## Git tag
+Trong Git, lịch sử dự án là một chuỗi các commit nối tiếp nhau trên một dòng thời gian. Lệnh git tag được dùng để đánh dấu (dán nhãn) một commit cụ thể nào đó được coi là một cột mốc quan trọng trong lịch sử của dự án.
+
+Thông thường, lập trình viên sử dụng tag để đánh dấu các điểm phát hành phiên bản phần mềm (ví dụ: v1.0.0, v2.0.0).
+
+### Điểm khác biệt cốt lõi: Git Tag vs Git Branch (Nhánh)
+Rất nhiều người nhầm lẫn giữa Tag và Nhánh vì cả hai đều trỏ đến một commit cụ thể. Tuy nhiên, bản chất của chúng hoàn toàn khác nhau:
+
+**Nhánh (Branch) là ĐỘNG**: Khi bạn đang ở nhánh main và bạn tạo một commit mới, ngọn của nhánh main sẽ tự động nhảy tiến lên để ôm lấy commit mới đó.
+
+**Tag là TĨNH (Bất biến)**: Một khi bạn đã dán nhãn (tag) vào một commit, nó sẽ đứng yên tại commit đó mãi mãi. Cho dù dự án có phát triển thêm hàng nghìn commit phía sau, cái tag đó vẫn nằm im tại vị trí lịch sử cũ. Nó hoạt động như một lịch sử tham chiếu cố định.
+
+### 2 loại tag trong Git
+Git phân chia tag làm hai loại dựa trên lượng dữ liệu và thông tin đi kèm mà bạn muốn lưu trữ:
+
+**A. Annotated Tags (Tag có chú thích - Khuyên dùng)**
+Loại tag này được lưu trữ dưới dạng một đối tượng đầy đủ (full object) trong cơ sở dữ liệu của Git. Nó lưu lại rất nhiều siêu dữ liệu (metadata) bảo mật bao gồm:
+
+Tên của người gắn tag.
+
+Email người gắn tag.
+
+Ngày giờ chính xác khi tạo tag.
+
+Một lời nhắn giải thích (tương tự như commit message).
+
+Có thể được ký xác thực bằng GPG (GNU Privacy Guard) để đảm bảo tính chính danh.
+
+**Khi nào dùng?** Luôn luôn sử dụng Annotated Tag cho các cột mốc phát hành chính thức (Public Releases) của dự án để đảm bảo tính minh bạch.
+
+**B. Lightweight Tags (Tag rút gọn / Tag nhẹ)**
+Loại tag này thực chất chỉ là một con trỏ (pointer) trỏ thẳng đến mã băm SHA-1 của một commit cụ thể, ngoài ra không lưu thêm bất kỳ thông tin nào khác. Nó giống như một cái nhãn dán tạm thời (bookmark) tự chế.
+
+**Khi nào dùng?** Sử dụng cho các mục đích thử nghiệm nội bộ, đánh dấu nhanh một vị trí code trên máy cá nhân để lát nữa quay lại tìm cho dễ.
+
+### Toàn bộ câu lệnh Git tag thực tế
+#### Xem danh sách các tag đang có
+```
+git tag
+```
+Nếu dự án có quá nhiều tag, bạn có thể lọc tìm kiếm bằng ký tự đại diện (*). Ví dụ, muốn tìm tất cả các tag thuộc phiên bản đầu v1.x:
+```
+git tag -l "v1.0*"
+```
+### Tạo một Tag mới (Dán nhãn cho hiện tại)
+Mặc định khi bạn gõ lệnh tạo tag, Git sẽ dán nhãn lên cú commit hiện tại nơi bạn đang đứng (HEAD).
+
+Tạo Annotated Tag (Đầy đủ): Dùng tham số -a và -m:
+```
+git tag -a v1.0.0 -m "Phát hành phiên bản 1.0.0 chính thức"
+```
+Tạo Lightweight Tag (Rút gọn): Chỉ viết tên tag:
+```
+git tag v1.0.0-beta
+```
+### Xem thông tin chi tiết của một Tag
+```
+git show v1.0.0
+```
+Nếu là Annotated Tag: Git sẽ in ra thông tin người tạo, ngày tháng, lời nhắn tag, rồi mới đến thông tin chi tiết của cú commit bên dưới.
+
+Nếu là Lightweight Tag: Git chỉ hiển thị thông tin của cú commit được trỏ tới.
+
+### Tagging old commits
+
+- Nếu dự án đã chạy qua thêm vài commit rồi bạn mới chợt nhớ ra phải dán nhãn cho một cú commit từ hôm qua, hãy dùng git log --oneline lấy mã băm rút gọn (Commit ID) của commit đó rồi truyền vào cuối lệnh:
+```
+$ git log --pretty=oneline
+    15027957951b64cf874c3557a0f3547bd83b3ff6 Merge branch 'feature'
+    a6b4c97498bd301d84096da251c98a07c7723e65 add update method for thing
+    0d52aaab4479697da7686c15f77a3d64d9165190 one more thing
+    6d52a271eda8725415634dd79daabbc4d9b6008e Merge branch 'experiment'
+```
+Lúc này viết Tag vào:
+```
+git tag -a v1.2 15027957951b64cf874c3557a0f3547bd83b3ff6
+```
+### ReTagging/Replacing old tags
+- Nếu bạn đã có tên tag đó rồi nhhungw lại muốn viêt lên dự án mới, nó sẽ báo lỗi 
+```
+fatal: tag 'v0.4' already exists
+```
+- Lúc này, bắt buộc phải thêm tham số bắt buộc phải thêm tham số -f (hoặc --force):
+```
+git tag -a -f v1.4 15027957951b64cf874c3557a0f3547bd83b3ff6
+```
+- Lệnh này sẽ ép buộc Git đem nhãn v1.4 (loại Annotated) đi dán thẳng vào cú commit có mã băm dài ngoằng kia, xóa sạch mọi liên kết cũ của nhãn v1.4 trước đó.
+
+### Sharing: Pushing tags to remote
+- Việc chia sẻ Tag với cả nhóm có cơ chế gần giống như việc bạn đẩy một cái nhánh (branch) lên mạng.
+- **Quy tắc vàng:** Theo mặc định, lệnh git push thông thường KHÔNG tự động đẩy các Tag lên mạng. Bạn bắt buộc phải chỉ định rõ ràng:  
+
+#### Đẩy một cái Tag duy nhất:
+```
+git push origin v1.4
+```
+- Màn hình sẽ hiển thị thông báo thành công
+```
+$ git push origin v1.4
+    Counting objects: 14, done.
+    Delta compression using up to 8 threads.
+    Compressing objects: 100% (12/12), done.
+    Writing objects: 100% (14/14), 2.05 KiB | 0 bytes/s, done.
+    Total 14 (delta 3), reused 0 (delta 0)
+    To git@bitbucket.com:atlasbro/gittagdocs.git
+     * [new tag]         v1.4 -> v1.4
+```
+- Màn hình sẽ hiển thị thông báo thành công: * [new tag] v1.4 -> v1.4.
+#### Đẩy hàng loạt Tag cùng lúc:
+```
+git push origin --tags
+```
+- Khi đồng nghiệp của bạn thực hiện lệnh git clone hoặc git pull để tải code về, máy của họ sẽ tự động nhận được toàn bộ các Tag mới này từ server.
+
+### Checking out tags
+- Nếu bạn muốn xem lại trạng thái của toàn bộ dự án tại thời điểm phiên bản v1.4 trông như thế nào, bạn dùng lệnh:
+```
+git checkout v1.4
+```
+- Khi chạy lệnh trên, bạn sẽ bị dưa vào tình trạng Detached HEAD
+- **Cơ chế:** Con trỏ HEAD (vị trí mắt bạn đang nhìn) bị rút ra khỏi các nhánh động và chỉ cắm thẳng vào đúng cú commit của Tag v1.4 mà thôi.
+- **Hệ quả:** Bất kỳ thay đổi hoặc commit nào bạn tạo ra tại đây **sẽ không cập nhật vào Tag**. Chúng sẽ sinh ra một commit "mồ côi" biệt lập. Commit mồ côi này không thuộc về bất kỳ một nhánh nào cả, và bạn chỉ có thể tìm lại nó nếu nhớ chính xác mã băm SHA của nó. Khi bạn checkout sang nhánh khác, commit mồ côi này sẽ bị Git xóa bỏ vĩnh viễn.
+```
+git checkout -b new_branch v1.4
+```
+### Deleting tags
+- Thao tác xóa tag rất đơn giản và gọn gàng. Bạn chỉ cần truyền tham số -d (Delete) cùng với tên của Tag muốn gỡ bỏ:
+```
+# Bước 1: Xem danh sách tag hiện tại (Ví dụ có: v1, v2, v3)
+$ git tag
+
+# Bước 2: Tiến hành xóa tag v1
+$ git tag -d v1
+
+# Bước 3: Kiểm tra lại xem mất chưa (Chỉ còn v2, v3)
+$ git tag
+```
+## Git blame
+- Git blame là 1 tiện ích để khắc phục sự cốlinh hoạt và nhiều tùy chọn mở rộng
+- Git blame dùng để hiển thị siêu dữ liệu của tác giả đã được gắn kèm vào dòng code hay commit cụ thể. Chủ yếu để kiểm tra xem ai đã thay đổi những gì trong dòng code đó tại thời điểm nào.Điều này giúp khám phá lịch sử của một đoạn code cụ thể và trả lời các câu hỏi về cái gì, như thế nào, và tại sao đoạn code đó lại được thêm vào kho chứa. 
+
+- git blame thường được sử dụng kết hợp với một giao diện hiển thị đồ họa (GUI). Các trang lưu trữ Git trực tuyến như Bitbucket cung cấp các chế độ xem blame (blame views) – thực chất là các lớp giao diện bọc ngoài lệnh git blame. Các chế độ xem này thường được trỏ tới trong các cuộc thảo luận nhóm xoay quanh các Pull Request và các Commit. Ngoài ra, hầu hết các môi trường phát triển tích hợp (IDE) có tích hợp Git đều sở hữu các chế độ xem blame động này.
+
+### How it works
+- Để minh họa, Cần có 1 kho chứa đã có lịch sử. Nên clone 1 dự án nào dó về:
+```
+git clone https://kevzettler@bitbucket.org/kevzettler/git-blame-example.git && cd git-blame-example
+```
+- Có thể kiểm tra trước kho chứa này bằng lệnh git log. Lịch sử commit sẽ như thế này:
+```
+$ git log
+    commit 548dabed82e4e5f3734c219d5a742b1c259926b23
+    Author: Juni Mukherjee <jmukherjee@atlassian.com>
+    Date:   Thu Mar 1 19:55:15 2018 +0000
+
+        Another commit to help git blame track the who, the what, and the when
+
+    commit eb06faedb1fdd159d62e4438fc8dbe9c9fe0728b
+    Author: Juni Mukherjee <jmukherjee@atlassian.com>
+    Date:   Thu Mar 1 19:53:23 2018 +0000
+
+        Creating the third commit, along with Kev and Albert, so that Kev can get git blame docs.
+
+    commit 990c2b6a84464fee153253dbf02e845a4db372bb
+    Merge: 82496ea 89feb84
+    Author: Albert So <aso@atlassian.com>
+    Date:   Thu Mar 1 05:33:01 2018 +0000
+
+        Merged in albert-so/git-blame-example/albert-so/readmemd-edited-online-with-bitbucket-1519865641474 (pull request #2)
+
+        README.md edited online with Bitbucket
+
+    commit 89feb84d885fe33d1182f2112885c2a64a4206ec
+    Author: Albert So <aso@atlassian.com>
+    Date:   Thu Mar 1 00:54:03 2018 +0000
+
+        README.md edited online with Bitbucket
+```
+- **Lưu ý:** git blame chỉ hoạt động trên 1 file đơn lẻ, bắt buộc phải truyền 1 đường dẫn file (file-path) thì lệnh mới trả về kết quả hữu ích. Ví dụ, chúng ta sẽ thao tác trên readme.md
+```
+git blame README.md
+```
+-Thực thi lệnh trên sẽ trả về mẫu kết quả đầu ra đầu tiên của lệnh blame.
+```
+$ git blame README.md
+    82496ea3 (kevzettler     2018-02-28 13:37:02 -0800  1) # Git Blame example
+    82496ea3 (kevzettler     2018-02-28 13:37:02 -0800  2)
+    89feb84d (Albert So      2018-03-01 00:54:03 +0000  3) This repository is an example of a project with multiple contributors making commits.
+    82496ea3 (kevzettler     2018-02-28 13:37:02 -0800  4)
+    82496ea3 (kevzettler     2018-02-28 13:37:02 -0800  5) The repo use used elsewhere to demonstrate `git blame`
+    82496ea3 (kevzettler     2018-02-28 13:37:02 -0800  6)
+    89feb84d (Albert So      2018-03-01 00:54:03 +0000  7) Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod TEMPOR incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+    89feb84d (Albert So      2018-03-01 00:54:03 +0000  8)
+    eb06faed (Juni Mukherjee 2018-03-01 19:53:23 +0000  9) Annotates each line in the given file with information from the revision which last modified the line. Optionally, start annotating from the given revision.
+    eb06faed (Juni Mukherjee 2018-03-01 19:53:23 +0000 10)
+    548dabed (Juni Mukherjee 2018-03-01 19:55:15 +0000 11) Creating a line to support documentation needs for git blame.
+    548dabed (Juni Mukherjee 2018-03-01 19:55:15 +0000 12)
+    548dabed (Juni Mukherjee 2018-03-01 19:55:15 +0000 13) Also, it is important to have a few of these commits to clearly reflect the who, the what and the when. This will help Kev get good screenshots when he runs the git blame on this README.
+```
+-Đây là mẫu hiển thị của 13 dòng đầu tiên trong file README.md. Để hiểu rõ hơn về kết quả này, hãy cùng bẻ tách phân tích chi tiết cấu trúc dữ liệu của Dòng số 3 thông qua bảng sau:
+### Thông tin Commit
+
+1. **ID (Mã commit):** `89feb84d`  
+1. **Author (Tác giả):** Albert So  
+1. **Timestamp (Thời gian):** 2018-03-01 00:54:03 +0000  
+1. **Line Number (Số dòng):** 3  
+1. **Line Content (Nội dung dòng code):**  
+
+
+- Khi nhìn vào danh sách kết quả blame này, chúng ta có thể đưa ra một vài quan sát. Có ba tác giả được liệt kê: bên cạnh người quản trị dự án là Kev Zettler, còn có sự xuất hiện của Albert So và Juni Mukherjee. Cột Tác giả (Author) thường là phần thông tin có giá trị nhất trong kết quả của git blame. Cột Thời gian (Timestamp) đóng vai trò bổ trợ và những gì đã bị thay đổi sẽ được chỉ rõ ở cột Nội dung dòng code.
+
+### Common options
+#### Giới hạn khoảng dòng hiển thị
+```
+git blame -L 1,5 README.md
+```
+- Yêu cầu phạm vi dòng được yêu cầu. Ở đây chỉ hiển thị từ dòng 1 tới dòng 5.
+#### Hiển thị địa chỉ Email
+```
+git blame -e README.md
+```
+- Tùy chọn -e sẽ hiển thị địa chỉ email của tác giả thay vì hiển thị tên người dùng (username).
+#### Bỏ qua khoảng trắng (Whitespace)
+```
+git blame -w README.md
+```
+- Tùy chọn -w sẽ bỏ qua các thay đổi liên quan đến khoảng trắng. Nếu một tác giả trước đó chỉ sửa đổi định dạng thụt lề của file bằng cách chuyển từ tab sang dấu cách hoặc thêm các dòng trống mới, việc này vô tình làm sai lệch kết quả của git blame. Tham số -w sẽ giúp lọc bỏ các thay đổi hình thức này.
+#### Phát hiện các dòng bị di chuyển trong cùng một file
+```
+git blame -M README.md
+```
+- Tùy chọn -M giúp phát hiện các dòng code bị di chuyển vị trí hoặc sao chép trong cùng một file. Nó sẽ truy vết và báo cáo lại tên của tác giả gốc đầu tiên viết đoạn code đó, thay vì báo cáo tên của người cuối cùng chỉ làm thao tác di chuyển vị trí đoạn code.
+#### Phát hiện các dòng bị sao chép từ file khác sang
+```
+git blame -C README.md
+```
+- Tùy chọn -C giúp phát hiện các dòng code được di chuyển hoặc sao chép từ các file khác sang file hiện tại. Lệnh này cũng sẽ báo cáo chính xác tác giả gốc ban đầu của đoạn code thay vì người thực hiện hành động sao chép.
+
+### Git blame vs git log
+- Mặc dù git blame hiển thị tác giả cuối cùng sửa đoạn code đó, nhưng nhiều lúc bạn sẽ muốn biết dòng code đó được thêm vào lần đầu tiên từ bao giờ.Việc tìm kiếm điều này bằng lệnh git blame đơn thuần sẽ khá cồng kềnh vì đòi hỏi bạn phải kết hợp đồng thời các tham số -w, -C, và -M. Trong tình huống này, sử dụng lệnh git log sẽ tiện lợi hơn rất nhiều.
+
+- Để liệt kê tất cả các commit gốc mà tại đó một đoạn code cụ thể được thêm vào hoặc sửa đổi, hãy thực thi git log với tùy chọn -S. Hãy đính kèm đoạn code bạn muốn tìm kiếm ngay sau tham số -S. Ví dụ, chúng ta sẽ lấy một đoạn văn bản "CSS3D and WebGL renderers." nằm ở dòng số 12 của file README để làm mẫu tìm kiếm:
+```
+$ git log -S"CSS3D and WebGL renderers." --pretty=format:'%h %an %ad %s'
+    e339d3c85 Mario Schuettel Tue Oct 13 16:51:06 2015 +0200 reverted README.md to original content
+    509c2cc35 Daniel Tue Sep 8 13:56:14 2015 +0200 Updated README
+    cb20237cc Mr.doob Mon Dec 31 00:22:36 2012 +0100 Removed DOMRenderer. Now with the CSS3DRenderer it has become irrelevant.
+```
+- Kết quả đầu ra này cho chúng ta thấy nội dung tìm kiếm trong file README đã được thêm hoặc sửa đổi 3 lần bởi 3 tác giả khác nhau. Đoạn code này thực chất được thêm vào đầu tiên trong commit cb20237cc bởi tác giả Mr.doob. Trong ví dụ này, lệnh git log cũng đã được bổ sung thêm tùy chọn --pretty=format để chuyển đổi định dạng hiển thị mặc định của nhật ký log sang định dạng tùy chỉnh gọn gàng hơn.
+
+## Undoing Commits & Changes
+- Về bản chất, Git là 1 công cụ quản lý thời gian. Các commit chính là đơn vị khối xây dựng cốt lõi của dòng thời gian trong một dự án Git. Commit có thể được coi là những snapshots hoặc các milestones dọc theo dòng thời gian của dự án. Các commit được tạo ra bằng lệnh git commit nhằm đóng băng và ghi trạng thái của dự án tại thời điểm đó.
+- Tài liệu này chia quy trình hủy bỏ thay đổi thành 2 nhóm giải pháp chính:
+1. Khám phá các commit cũ để xem lại lịch sử. 
+1. Phân biệt rõ ràng giữa việc Revert (Hoàn tác các commit đã đẩy lên mạng công khai) và Reset (Xóa bỏ các thay đổi chưa xuất bản dưới máy cục bộ).
+
+### Finding what is lost: Reviewing old commits
+- Ý tưởng cốt lõi của bất kỳ hệ thống quản lý phiên bản nào là lưu trữ các bản sao "an toàn" của dự án để bạn không bao giờ phải lo lắng về việc code của mình bị hỏng đến mức không thể cứu vãn. Một khi bạn đã xây dựng được một chuỗi lịch sử, bạn có thể xem lại bất kỳ commit nào trong quá khứ thông qua lệnh git log.
+```
+git log --oneline
+e2f9a78fe Replaced FlyControls with OrbitControls
+d35ce0178 Editor: Shortcuts panel Safari support.
+9dbe8d0cf Editor: Sidebar.Controls to Sidebar.Settings.Shortcuts. lean up.
+05c5288fc Merge pull request #12612 from TyLindberg/editor-controls-panel
+0d8b6e74b Merge pull request #12805 from harto/patch-1
+23b20c22e Merge pull request #12801 from gam0022/improve-raymarching-example-v2
+fe78029f1 Fix typo in documentation
+7ce43c448 Merge pull request #12794 from WestLangley/dev-x
+17452bb93 Merge pull request #12778 from OndrejSpanel/unitTestFixes
+b5c1b5c70 Merge pull request #12799 from dhritzkiv/patch-21
+1b48ff4d2 Updated builds.
+88adbcdf6 WebVRManager: Clean up.
+2720fbb08 Merge pull request #12803 from dmarcos/parentPoseObject
+9ed629301 Check parent of poseObject instead of camera
+219f3eb13 Update GLTFLoader.js
+15f13bb3c Update GLTFLoader.js
+6d9c22a3b Update uniforms only when onWindowResize
+881b25b58 Update ProjectionMatrix on change aspect
+```
+- Bạn có thể sử dụng git checkout để quay về xem cú commit 
+- **Lưu ý:** Mặc định, git log chỉ hiển thị các commit của nhánh bạn đang đứng. Nếu commit bạn tìm nằm ở nhánh khác, hãy gõ git log --branches=* để xem tất cả các nhánh. Lệnh git branch -a sẽ liệt kê toàn bộ các nhánh đang có trong hệ thống.
+
+### Viewing an old revision
+- Giả sử đang tiến hành một thử nghiệm viết code rất điên rồ, nhưng gõ được một lúc thì phân vân không biết có nên giữ lại đoạn code này không. Bạn muốn quay về xem trạng thái dự án trước khi cuộc thử nghiệm bắt đầu.
+
+Lịch sử git log --oneline của bạn đang như thế này:
+```
+b7119f2 Continue doing crazy things (Đang thử nghiệm điên rồ)
+872fa7e Try something crazy
+a1e8fb5 Make some important changes to hello.txt (Mốc an toàn)
+435b61d Create hello.txt
+9773e52 Initial import
+```
+Để quay về mốc an toàn a1e8fb5, bạn gõ:
+```
+git checkout a1e8fb5
+```
+- Lệnh này sẽ làm cho thư mục làm việc của bạn biến đổi để khớp chính xác 100% với trạng thái của commit a1e8fb5. Bạn có thể thoải mái xem file, biên dịch dự án, chạy thử nghiệm, thậm chí sửa file mà không phải lo lắng về việc làm hỏng trạng thái hiện tại của dự án. Không có bất kỳ điều gì bạn làm trong trạng thái này được lưu lại vào kho chứa của bạn.
+- Để tiếp tục phát triển code ở hiện tại, bạn cần phải quay trở lại trạng thái "mới nhất" của dự án:
+```
+git checkout main
+```
+### Undoing a committed snapshot
+Chúng ta sẽ tiếp tục sử dụng đoạn lịch sử log ở ví dụ trên và tập trung vào việc hủy bỏ cú commit 872fa7e Try something crazy
+
+#### Cách 1: Hủy commit bằng git checkout (Rẽ nhánh mới)
+- Từ trạng thái đang ở commit cũ a1e8fb5 (sau khi chạy lệnh git checkout a1e8fb5), hệ thống của bạn sẽ rơi vào chế độ Detached HEAD (Không thuộc nhánh nào). Từ đây, bạn có thể thực thi lệnh:
+```
+git checkout -b new_branch_without_crazy_commit
+```
+- Lệnh này sẽ tạo ra một nhánh mới mang tên new_branch_without_crazy_commit và lập tức chuyển sang nhánh đó. Kho chứa của bạn bây giờ đã nằm trên một dòng thời gian lịch sử mới – nơi mà cú commit lỗi 872fa7e hoàn toàn không tồn tại. Bạn có thể tiếp tục công việc trên nhánh mới này và coi như commit lỗi đã được "hủy bỏ".
+
+- Tuy nhiên, nếu bạn bắt buộc phải làm việc trên nhánh cũ (ví dụ đó là nhánh chính main của bạn), thì chiến lược hủy bỏ này hoàn toàn không phù hợp.
+
+#### Cách 2: Hủy commit công khai bằng git revert
+- Quay trở lại với lịch sử gốc ban đầu (có chứa commit lỗi 872fa7e). Lần này chúng ta sẽ thử dùng giải pháp đảo ngược. Nếu bạn thực thi lệnh:
+```
+git revert HEAD
+```
+- Git sẽ tự động tính toán dữ liệu và tạo ra một commit mới tinh có nội dung hoàn toàn nghịch đảo (trái ngược) so với commit gần nhất của bạn. Lịch sử trên nhánh hiện tại của bạn sẽ được nối dài và trông giống như thế này:
+```
+e2f9a78 Revert "Try something crazy"
+872fa7e Try something crazy
+a1e8fb5 Make some important changes to hello.txt
+435b61d Create hello.txt
+9773e52 Initial import
+```
+- Tại thời điểm này, về mặt kỹ thuật bạn đã "hủy bỏ" thành công commit 872fa7e. Mặc dù mốc 872fa7e vẫn tồn tại trong lịch sử, nhưng commit mới e2f9a78 đã triệt tiêu toàn bộ các thay đổi của nó. Khác với chiến lược dùng lệnh checkout ở trên, bạn có thể tiếp tục sử dụng trên chính cái nhánh cũ này.
+
+ - * Lời khuyên phối hợp nhóm: Đây là phương pháp "undo" lý tưởng nhất khi làm việc với các kho chứa công khai, được chia sẻ chung với nhiều người (Public/Shared Repositories). Tuy nhiên, nếu bạn có yêu cầu khắt khe về việc phải giữ cho lịch sử Git luôn ngắn gọn và được sàng lọc tối giản, chiến lược này có thể sẽ không làm bạn hài lòng. 
+
+ #### Cách 3: Hủy commit bằng git reset (Xóa sổ lịch sử)
+ - Đối với chiến lược hủy bỏ này, chúng ta tiếp tục với ví dụ đang làm dở. Lệnh git reset là một lệnh mở rộng có rất nhiều công dụng và chức năng. Nếu bạn thực thi câu lệnh:
+ ```
+ git reset --hard a1e8fb5
+ ```
+ - Dòng thời gian lịch sử commit của bạn sẽ lập tức bị kéo giật lùi về đúng cái commit được chỉ định đó. Kiểm tra lại lịch sử bằng git log, kết quả sẽ chỉ còn lại thế này:
+ ```
+ a1e8fb5 Make some important changes to hello.txt
+435b61d Create hello.txt
+9773e52 Initial import
+ ```
+ - Kết quả hiển thị cho thấy hai commit e2f9a78 và 872fa7e không còn tồn tại trong lịch sử commit nữa. Tại thời điểm này, bạn có thể tiếp tục làm việc và tạo ra các commit mới như thể cú commit "điên rồ" kia chưa từng xảy ra trên đời.
+ - - Phương pháp hủy bỏ thay đổi này mang lại hiệu quả sạch sẽ nhất cho lịch sử dự án. Việc thực hiện một cú reset là điều tuyệt vời đối với các thay đổi nội bộ cá nhân (Local), tuy nhiên nó sẽ gây ra những biến chứng phức tạp khi bạn làm việc với một kho chứa chung trên mạng (Shared Remote Repository). Nếu kho chứa chung trên mạng đã lỡ nhận cú commit 872fa7e do bạn đẩy lên trước đó, và bây giờ bạn cố gắng chạy lệnh git push một cái nhánh mà bạn đã xóa lịch sử bằng lệnh reset, Git sẽ phát hiện ra điều này và chặn lại kèm theo thông báo lỗi. Git sẽ cho rằng nhánh bạn đang cố đẩy lên mạng đang bị lỗi thời vì nó bị thiếu hụt các commit so với máy chủ. Trong những kịch bản làm việc nhóm như thế này, git revert bắt buộc phải là phương pháp undo được ưu tiên sử dụng.
+
+ ## Git clean
+ - Lệnh git clean ở một góc độ nào đó có thể được coi là một lệnh "hủy bỏ" (undo). Nó đóng vai trò bổ trợ cho các lệnh khác như git reset và git checkout. Trong khi các lệnh vừa nêu hoạt động trên các file đã được đưa vào hàng chờ theo dõi (Git tracking index) từ trước, thì lệnh git clean lại chuyên trị các file chưa được theo dõi (untracked files). File chưa theo dõi là những file đã được tạo ra bên trong thư mục làm việc (working directory) của kho chứa nhưng chưa từng được khai báo bằng lệnh git add.
+
+Để hình dung rõ hơn sự khác biệt giữa file được theo dõi (tracked) và chưa được theo dõi (untracked), hãy cùng xem ví dụ dòng lệnh dưới đây:
+```
+$ mkdir git_clean_test
+$ cd git_clean_test/
+$ git init .
+Initialized empty Git repository in /Users/kev/code/git_clean_test/.git/
+$ echo "tracked" > ./tracked_file
+$ git add ./tracked_file
+$ echo "untracked" > ./untracked_file
+$ mkdir ./untracked_dir && touch ./untracked_dir/file
+$ git status
+On branch master
+
+Initial commit
+
+Changes to be committed:
+  (use "git rm --cached <file>..." to unstage)
+
+	new file:   tracked_file
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	untracked_dir/
+	untracked_file
+```
+- Ví dụ trên khởi tạo một kho chứa Git mới tinh trong thư mục git_clean_test. Sau đó, nó tiến hành tạo file tracked_file và đưa vào hàng chờ Git Index bằng lệnh git add. Tiếp theo, một file untracked_file và một thư mục untracked_dir được tạo ra nhưng không gõ git add. Khi chạy git status, Git hiển thị rõ ràng trạng thái ngầm bên trong của hai nhóm file này.
+
+- Bây giờ, nếu chúng ta cố tình chạy lệnh git clean ở trạng thái này, một lỗi nghiêm trọng (fatal error) sẽ xảy ra:
+```
+$ git clean
+fatal: clean.requireForce defaults to true and neither -i, -n, nor -f given; refusing to clean
+```
+#### Cơ chế bảo vệ của Git
+- Mặc định, Git được cấu hình toàn cục để bắt buộc người dùng phải truyền vào một tham số "ép buộc" (force) thì lệnh git clean mới chịu chạy. Đây là một cơ chế an toàn cực kỳ quan trọng. Khi đã thực thi hoàn tất, hành động của git clean là KHÔNG THỂ CỨU VÃN. Nó sẽ thực hiện một cú xóa cứng trực tiếp trên ổ cứng hệ thống (filesystem deletion), tương tự như khi bạn gõ lệnh rm trong Linux hay Terminal. Hãy chắc chắn rằng bạn thực sự muốn xóa bỏ các file rác đó trước khi kích hoạt lệnh.
+
+### Common options and usage
+- Dưới đây là các kịch bản sử dụng thực tế của git clean đi kèm với các tham số dòng lệnh tương ứng:
+
+#### -n (Chạy thử nghiệm - Dry Run)
+
+- Tham số -n sẽ thực hiện một cú "chạy thử" ngầm. Git sẽ liệt kê ra những file nào sẽ bị xóa sạch nếu lệnh thực thi thật, nhưng hoàn toàn chưa xóa gì cả.
+- Luôn luôn chạy thử nghiệm với -n trước khi gõ lệnh xóa thật để kiểm tra.
+```
+git clean -n
+Would remove untracked_file
+```
+- Kết quả báo rằng file untracked_file sẽ bị xóa. Hãy lưu ý rằng thư mục untracked_dir không hề xuất hiện trong danh sách này. Theo mặc định, git clean sẽ không tự động quét sâu vào các thư mục con (không chạy đệ quy). Đây lại là một cơ chế an toàn khác nhằm ngăn chặn việc lỡ tay xóa mất cả một thư mục dữ liệu lớn.
+
+#### -f hoặc --force (Ép buộc xóa file)
+- Tham số này chính thức ra lệnh cho Git quét sạch các file chưa được theo dõi khỏi thư mục hiện tại. Force là bắt buộc, trừ khi bạn cấu hình lại thuộc tính hệ thống clean.requireForce thành false. Lệnh này mặc định không xóa các thư mục chưa được theo dõi, cũng như không đụng vào các file được quy định trong .gitignore.
+```
+$ git clean -f
+Removing untracked_file
+```
+- Git thông báo file untracked_file đã bị xóa bỏ. Nếu bạn gõ git status hoặc ls tại thời điểm này, file đó đã bốc hơi hoàn toàn không để lại dấu vết.
+
+- - Ngoài ra, bạn có thể truyền thêm đường dẫn vào -f để chỉ đích danh file muốn xóa chứ không xóa toàn bộ
+```
+git clean -f <path>
+```
+
+#### -d (Quét sạch cả thư mục con)
+- Mặc định Git sẽ lờ các thư mục đi. Tham số -d ra lệnh cho git clean xử lý luôn cả các thư mục chưa được theo dõi. Bạn có thể kết hợp chung với các tham số khác:
+```
+# Chạy thử nghiệm kết hợp -dn
+$ git clean -dn
+Would remove untracked_dir/
+
+# Thực thi xóa thật bằng -df
+$ git clean -df
+Removing untracked_dir/
+```
+#### -x (Xóa luôn cả các file nằm trong .gitignore)
+- Trong quy trình phát triển phần mềm, chúng ta thường có các thư mục chứa file biên dịch, file build (như /bin, /out hoặc /target) tự sinh ra từ mã nguồn. Các thư mục này thường được đưa vào file .gitignore để không bị push lên mạng.
+
+- Tuy nhiên, khi bạn muốn dọn sạch dự án về trạng thái nguyên bản lúc mới tải về, bạn sẽ muốn xóa luôn cả đống file build ẩn này. Tham số -x sẽ ép Git xóa sạch mọi file chưa theo dõi, bao gồm cả các file đang bị cấm bởi .gitignore.
+```
+git clean -xf
+```
+
+**Cảnh báo:** Tham số -x sẽ tác động lên tất cả các file bị ignore, bao gồm cả những file cấu hình cá nhân của phần mềm code (như thư mục .idea/ của IDE) mà có thể bạn không hề muốn làm mất. Hãy luôn chạy thử với git clean -xn trước.
+
+### Interactive mode or git clean interactive
+- Nếu bạn không muốn gõ lệnh một cách mù quáng, Git cung cấp một giao diện tương tác từng bước cực kỳ trực quan thông qua tham số -i (Interactive). Quay trở lại trạng thái kho chứa ban đầu, chúng ta kích hoạt chế độ này (có kèm thêm -d để quét cả thư mục):
+```
+$ git clean -di
+Would remove the following items:
+  untracked_dir/  untracked_file
+*** Commands ***
+    1: clean                2: filter by pattern    3: select by numbers    4: ask each             5: quit                 6: help
+What now>
+```
+Hệ thống hiển thị danh sách các file sắp bị tác động và đưa ra một con trỏ lệnh What now>. Dưới đây là ý nghĩa chi tiết của từng lựa chọn:
+
+-  quit: Thoát ngay lập tức khỏi chế độ tương tác mà không thay đổi hay xóa bất kỳ thứ gì.
+
+- 6: help: Hiển thị menu hướng dẫn giải thích chi tiết tính năng của các phím bấm khác.
+
+- 1: clean: Tiến hành xóa sạch toàn bộ danh sách các mục đang được hiển thị. (Nếu bấm 1, cả untracked_dir/ và untracked_file sẽ bay màu ngay).
+
+- 4: ask each: Git sẽ lội qua từng file một và hiển thị một câu hỏi Xác nhận Có/Không (Y/N) trước khi quyết định xóa file đó (y hệt như lệnh rm -i của Linux).
+```
+What now> 4
+Remove untracked_dir/ [y/N]? N
+Remove untracked_file [y/N]? N
+```
+- 2: filter by pattern: Hiển thị thêm một con trỏ lệnh cho phép bạn gõ ký tự đại diện (wildcard) nhằm lọc bớt, giữ lại một số file không muốn xóa ra khỏi danh sách tử thần.
+```
+What now> 2
+Input ignore patterns>> *_file
+  untracked_dir/
+```
+(Trong ví dụ này, việc gõ *_file giúp loại trừ file có đuôi _file ra, danh sách xóa lúc này chỉ còn trơ trọi lại untracked_dir/).
+
+- 3: select by numbers: Thay vì gõ chữ để lọc, bạn có thể gõ số thứ tự tương ứng với file được Git liệt kê để chọn đích danh xem muốn xử tử file nào.
+```
+Select items to delete>> 2
+    1: untracked_dir/  * 2: untracked_file
+Select items to delete>> [Bấm Enter để chốt]
+Would remove the following item:
+  untracked_file
+  ```
+(Dấu sao * xuất hiện bên cạnh số 2 báo hiệu file đó đã được chọn để xóa).
+
+## Git revert
+- Lệnh git revert có thể được coi là một lệnh thuộc kiểu "hủy bỏ" (undo), tuy nhiên, nó không phải là một thao tác hoàn tác truyền thống. Thay vì xóa bỏ cú commit khỏi lịch sử của dự án, lệnh này sẽ tính toán cách để nghịch đảo (trái ngược) các thay đổi được đưa vào bởi commit đó, rồi tạo thêm một commit mới tinh chứa nội dung đảo ngược này. Cơ chế này giúp Git không bị mất lịch sử dữ liệu, một điều tối quan trọng đối với tính toàn vẹn của lịch sử phiên bản và quy trình làm việc nhóm đáng tin cậy.
+
+- Bạn nên sử dụng hành động revert khi muốn áp dụng những thay đổi trái ngược của một commit cụ thể trong lịch sử dự án. Lệnh này cực kỳ hữu ích trong trường hợp bạn đang truy vết một lỗi (bug) và phát hiện ra rằng nó được sinh ra từ đúng một commit duy nhất. Thay vì phải vào sửa code bằng tay một cách thủ công rồi commit một ảnh chụp mới, bạn có thể dùng git revert để hệ thống tự động làm toàn bộ các bước này cho bạn.
+### How it works
+- Lệnh git revert được sử dụng để hủy bỏ các thay đổi đối với lịch sử commit của một kho chứa. Các lệnh "undo" khác như git checkout và git reset hoạt động bằng cách di chuyển con trỏ HEAD và con trỏ nhánh (branch ref) về một commit được chỉ định. git revert cũng tiếp nhận một commit được chỉ định, tuy nhiên, git revert KHÔNG di chuyển các con trỏ tham chiếu về commit đó.
+
+- Một thao tác revert sẽ lấy commit được chỉ định, đảo ngược các thay đổi của commit đó, và tạo ra một "commit đảo ngược" (revert commit) mới tinh. Sau đó, các con trỏ tham chiếu nhánh sẽ được cập nhật để trỏ vào chính cái commit đảo ngược mới này, biến nó thành ngọn mới nhất (tip) của nhánh.
+
+Để minh họa, hãy cùng tạo một kho chứa ví dụ thông qua các dòng lệnh dưới đây:
+```
+$ mkdir git_revert_test
+$ cd git_revert_test/
+$ git init .
+Initialized empty Git repository in /git_revert_test/.git/
+$ touch demo_file
+$ git add demo_file
+$ git commit -am"initial commit"
+[main (root-commit) 299b15f] initial commit
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 demo_file
+$ echo "initial content" >> demo_file
+$ git commit -am"add new content to demo file"
+[main 3602d88] add new content to demo file
+ 1 file changed, 1 insertion(+)
+$ echo "prepended line content" >> demo_file
+$ git commit -am"prepend content to demo file"
+[main 86bb32e] prepend content to demo file
+ 1 file changed, 1 insertion(+)
+$ git log --oneline
+86bb32e prepend content to demo file
+3602d88 add new content to demo file
+299b15f initial commit
+```
+- Tại đây, chúng ta đã khởi tạo một kho chứa trong một thư mục mới tạo tên là git_revert_test. Chúng ta tiến hành thực hiện 3 commit, trong đó chúng ta thêm file demo_file và sửa đổi nội dung của nó 2 lần. Cuối quy trình, chúng ta gọi lệnh git log để hiển thị lịch sử commit, kết quả trả về tổng cộng 3 commit. Với kho chứa ở trạng thái này, chúng ta đã sẵn sàng để kích hoạt một cú git revert:
+```
+$ git revert HEAD
+[main b9cd081] Revert "prepend content to demo file"
+ 1 file changed, 1 deletion(-)
+```
+Lệnh git revert luôn bắt buộc bạn phải truyền vào một tham chiếu commit (commit ref) và sẽ từ chối chạy nếu thiếu thông tin này. Ở ví dụ trên, chúng ta truyền vào tham chiếu HEAD. Lệnh này sẽ tiến hành đảo ngược cú commit mới nhất hiện tại. Hành động này đem lại kết quả hoàn toàn tương tự như việc bạn chỉ đích danh mã băm commit 3602d88.
+
+Gần giống như một thao tác gộp nhánh (merge), lệnh revert sẽ tạo ra một commit mới, do đó Git sẽ tự động mở trình soạn thảo văn bản mặc định của hệ thống để yêu cầu bạn nhập lời nhắn cho commit mới này (commit message). Một khi lời nhắn được nhập và lưu lại, Git sẽ hoàn tất quy trình. Bây giờ chúng ta kiểm tra lại trạng thái kho chứa bằng git log:
+```
+$ git log --oneline
+1061e79 Revert "prepend content to demo file"
+86bb32e prepend content to demo file
+3602d88 add new content to demo file
+299b15f initial commit
+```
+Hãy đặc biệt lưu ý rằng cú commit thứ 3 (86bb32e) vẫn nằm nguyên trong lịch sử dự án sau khi thực hiện lệnh revert. Thay vì xóa sổ nó, git revert đã ghi thêm một commit mới (1061e79) để triệt tiêu các thay đổi của nó. Hệ quả là, trạng thái code của commit thứ 2 (3602d88) và commit thứ 4 (1061e79) đại diện cho cùng một nền tảng code chính xác như nhau, trong khi commit thứ 3 vẫn được giữ lại trong lịch sử phòng trường hợp bạn muốn quay lại dùng nó ở chặng đường phía trước.
+
+### Common options
+1. **-e hoặc --edit**  
+Đây là tùy chọn mặc định của hệ thống nên bạn không cần phải gõ chỉ định. Tùy chọn này sẽ tự động mở trình soạn thảo văn bản để bạn chỉnh sửa lời nhắn commit trước khi chính thức chốt cú commit revert.
+
+1. **-- no-edit**  
+Đây là tùy chọn đảo ngược của -e. Lệnh revert sẽ tự động thực thi và chốt commit mà không thèm mở trình soạn thảo văn bản lên nữa.
+
+1. **-n hoặc --no-commit**  
+Việc truyền thêm tham số này sẽ ngăn chặn git revert tự động tạo ra một cú commit mới. Thay vì tạo commit chốt hạ, tùy chọn này sẽ chỉ tính toán các thay đổi đảo ngược rồi đẩy toàn bộ chúng vào Khu vực hàng chờ (Staging Index) và Thư mục làm việc (Working Directory) của bạn (để hiển thị thành các file đỏ/xanh cho bạn tự tay kiểm tra hoặc sửa đổi tiếp trước khi tự commit bằng tay).
+### Resetting vs. Reverting
+Một điều cực kỳ quan trọng cần phải thấu hiểu là: git revert chỉ hủy bỏ duy nhất một commit đơn lẻ được chỉ định – nó hoàn toàn không "khôi phục" dự án quay về trạng thái cũ bằng cách xóa bỏ tất cả các commit thế hệ sau. Trong Git, hành động xóa bỏ hàng loạt commit phía sau để lùi về quá khứ được gọi là Reset, chứ không phải Revert. 
+
+Lệnh Revert sở hữu hai ưu điểm vượt trội hoàn toàn so với lệnh Reset:
+- Thứ nhất (An toàn cho làm việc nhóm): Nó hoàn toàn không làm thay đổi hay bóp méo lịch sử vốn có của dự án. Điều này biến nó trở thành một thao tác "an toàn tuyệt đối" đối với các commit đã được xuất bản (push) lên một kho chứa chung với đội nhóm.
+- Thứ hai (Nhắm mục tiêu linh hoạt): Lệnh git revert có khả năng nhắm thẳng vào một commit đơn lẻ nằm ở bất kỳ vị trí tùy ý nào trong lịch sử, trong khi git reset chỉ có thể hoạt động bằng cách đi giật lùi từ commit hiện tại về sau. Ví dụ, nếu bạn muốn hủy một commit rất cũ bằng lệnh git reset, bạn sẽ buộc phải xóa sạch sành sanh toàn bộ các commit mới hơn được tạo ra sau commit đó, xóa commit lỗi, rồi sau đó mới tiến hành commit lại đống file mới kia. Đây rõ ràng là một giải pháp hoàn tác vô cùng vụng về và thiếu tinh tế.
+
+## Git reset
+Lệnh git reset là một công cụ phức tạp và đa năng để hủy bỏ các thay đổi. Nó có ba dạng kích hoạt chính, tương ứng với các tham số dòng lệnh: --soft, --mixed, và --hard. Ba tham số này lần lượt tác động trực tiếp đến ba cơ chế quản lý trạng thái nội bộ của Git, thường được gọi là Ba Cây (Three Trees) của Git: Cây Commit (HEAD), Hàng chờ Staging Index, và Thư mục làm việc (Working Directory).
+
+### Git reset & three trees of git
+
+Để hiểu đúng cách sử dụng git reset, trước tiên chúng ta phải hiểu hệ thống quản lý trạng thái nội bộ của Git. Đôi khi các cơ chế này được gọi là "ba cây" của Git. Gọi là "cây" thì có vẻ hơi sai thuật ngữ, vì chúng không hoàn toàn là cấu trúc dữ liệu cây (tree) truyền thống. Tuy nhiên, chúng là các cấu trúc dữ liệu dựa trên nút (node) và con trỏ (pointer) mà Git sử dụng để theo dõi dòng thời gian chỉnh sửa. Cách tốt nhất để chứng minh các cơ chế này là tạo ra một tập hợp thay đổi (changeset) trong kho chứa và theo dõi nó đi qua ba cây.
+
+Để bắt đầu, chúng ta sẽ tạo một kho chứa mới bằng các câu lệnh dưới đây:
+
+```
+$ mkdir git_reset_test
+$ cd git_reset_test/
+$ git init .
+Initialized empty Git repository in /git_reset_test/.git/
+$ touch reset_lifecycle_file
+$ git add reset_lifecycle_file
+$ git commit -m"initial commit"
+[main (root-commit) d386d86] initial commit
+1 file changed, 0 insertions(+), 0 deletions(-)
+create mode 100644 reset_lifecycle_file
+```
+Đoạn mã ví dụ trên tạo ra một kho chứa Git mới với một file trống duy nhất: reset_lifecycle_file. Tại thời điểm này, kho chứa ví dụ có một commit duy nhất (d386d86) từ việc thêm file này.
+
+### 1. **The Working Directory**
+Cây thư mục đầu tiên chúng ta sẽ xem xét là "Thư mục làm việc". Cây thư mục này đồng bộ với hệ thống tệp cục bộ và thể hiện những thay đổi tức thời được thực hiện đối với nội dung trong các tệp và thư mục.
+```
+$ echo 'hello git reset' > reset_lifecycle_file
+$ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working directory)
+
+	modified:   reset_lifecycle_file
+```
+- Trong kho chứa thử nghiệm, chúng ta sửa đổi và thêm một số nội dung vào reset_lifecycle_file. Việc gọi lệnh git status cho thấy Git đã nhận biết được các thay đổi đối với file. Những thay đổi này hiện đang là một phần của cây đầu tiên, "The Working Directory". Lệnh git status được dùng để hiển thị các thay đổi trong Working Directory. Chúng sẽ được hiển thị bằng màu đỏ với tiền tố 'modified'.
+
+### 2. **Staging index**
+Tiếp theo là cây "Staging Index". Cây này theo dõi các thay đổi từ Working Directory đã được thăng cấp bằng lệnh git add để chuẩn bị lưu vào commit tiếp theo. Cây này là một cơ chế bộ nhớ đệm (caching) nội bộ phức tạp. Git thường cố gắng ẩn các chi tiết triển khai của Staging Index khỏi người dùng.
+
+Để xem chính xác trạng thái của Staging Index, chúng ta phải sử dụng một lệnh ít được biết đến là git ls-files. Lệnh git ls-files về cơ bản là một công cụ kiểm thử (debug) để kiểm tra trạng thái ngầm của cây Staging Index.
+```
+$ git ls-files -s
+100644 e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 0   reset_lifecycle_file
+```
+Ở đây chúng ta đã thực thi git ls-files với tùy chọn -s hoặc --stage. Nếu không có tùy chọn -s, kết quả đầu ra đơn giản chỉ là một danh sách tên file và đường dẫn hiện có trong index. Tùy chọn -s hiển thị thêm siêu dữ liệu (metadata) cho các file trong Staging Index. Siêu dữ liệu này là các bit chế độ của nội dung được stage, tên đối tượng (mã SHA-1), và số stage.
+
+Ở đây chúng ta quan tâm đến tên đối tượng, giá trị thứ hai (e69de29...). Đây là mã băm SHA-1 chuẩn của Git cho nội dung của file. Lịch sử commit lưu trữ các mã SHA đối tượng của riêng nó để xác định các con trỏ tới các commit và tham chiếu, còn Staging Index có các mã SHA đối tượng của riêng nó để theo dõi các phiên bản của file trong index.
+
+Tiếp theo, chúng ta sẽ đưa file reset_lifecycle_file đã sửa đổi vào Staging Index.
+
+```
+$ git add reset_lifecycle_file
+$ git status
+On branch main
+Changes to be committed:
+  (use "git reset HEAD <file>..." to unstage)
+
+	modified:   reset_lifecycle_file
+```
+Tại đây chúng ta gọi lệnh git add reset_lifecycle_file để đưa file vào Staging Index. Gọi lệnh git status lúc này sẽ hiển thị file bằng màu xanh lá cây dưới mục "Changes to be committed". Một lưu ý quan trọng là git status không phải là đại diện thực sự của Staging Index. Đầu ra của lệnh git status chỉ hiển thị các thay đổi giữa Lịch sử Commit và Staging Index. Hãy cùng kiểm tra nội dung Staging Index tại thời điểm này:
+```
+$ git ls-files -s
+100644 d7d77c1b04b5edd5acfc85de0b592449e5303770 0 reset_lifecycle_file
+```
+Chúng ta có thể thấy mã SHA đối tượng của reset_lifecycle_file đã được cập nhật từ e69de29... thành d7d77c1b04b5edd5acfc85de0b592449e5303770.
+
+### 3. **Commit history**  
+Cây cuối cùng là Commit History. Lệnh git commit thêm các thay đổi vào một ảnh chụp (snapshot) vĩnh viễn tồn tại trong Commit History. Ảnh chụp này cũng bao gồm trạng thái của Staging Index tại thời điểm commit.
+```
+$ git commit -am"update content of reset_lifecycle_file"
+[main dc67808] update content of reset_lifecycle_file
+ 1 file changed, 1 insertion(+)
+$ git status
+On branch main
+nothing to commit, working tree clean
+```
+Tại đây chúng ta đã tạo một commit mới với lời nhắn "update content of reset_lifecycle_file". Tập hợp thay đổi đã được ghi vào Commit History. Gọi git status lúc này cho thấy không còn thay đổi nào chờ xử lý ở bất kỳ cây nào nữa. Chạy lệnh git log sẽ hiển thị Lịch sử Commit. Bây giờ, sau khi đã theo dõi tập hợp thay đổi đi qua cả ba cây, chúng ta có thể bắt đầu sử dụng git reset.
+
+### How it works
+Ở bề mặt giao diện, git reset có hành vi khá giống với git checkout. Trong khi git checkout chỉ hoạt động duy nhất trên con trỏ tham chiếu HEAD, thì git reset sẽ di chuyển cả con trỏ HEAD lẫn con trỏ tham chiếu của nhánh hiện tại (current branch ref pointer). Để hình dung rõ hơn, hãy xem ví dụ sau:
+Ví dụ này mô tả một chuỗi các commit trên nhánh main. Con trỏ HEAD và tham chiếu nhánh main hiện đang cùng trỏ vào commit d. Bây giờ chúng ta hãy thực thi và so sánh giữa git checkout b và git reset b:
+
+- git checkout b: Tham chiếu nhánh main vẫn tiếp tục trỏ vào commit d. Chỉ có con trỏ HEAD bị di chuyển và bây giờ trỏ vào commit b. Kho chứa rơi vào trạng thái Detached HEAD.
+
+- git reset b: Di chuyển cả hai con trỏ HEAD và tham chiếu nhánh main về commit được chỉ định (b).
+
+Bên cạnh việc cập nhật các con trỏ tham chiếu commit, git reset còn sửa đổi trạng thái của ba cây nội bộ. Việc sửa đổi con trỏ tham chiếu luôn xảy ra (đây chính là cập nhật cây thứ 3 - Cây Commit). Các tham số dòng lệnh --soft, --mixed, và --hard sẽ điều hướng cách thức sửa đổi hai cây còn lại là Staging Index và Working Directory.  
+
+### Main options
+Mặc định, lệnh git reset nếu không viết gì thêm sẽ tự hiểu các tham số ẩn là --mixed và HEAD. Nghĩa là gõ git reset tương đương với gõ git reset --mixed HEAD. Thay vì HEAD, bất kỳ mã băm SHA-1 của commit nào cũng có thể được sử dụng làm mục tiêu. 
+
+#### --hard
+Đây là tùy chọn trực tiếp nhất, NGUY HIỂM nhất và được sử dụng thường xuyên nhất. Khi được truyền vào, --hard các con trỏ tham chiếu Lịch sử Commit sẽ được cập nhật thành commit được chỉ định. Sau đó, Chỉ mục Staging và Thư mục Làm việc sẽ được đặt lại để khớp với commit được chỉ định. Bất kỳ thay đổi nào đang chờ xử lý trước đó đối với Chỉ mục Staging và Thư mục Làm việc sẽ được đặt lại để khớp với trạng thái của Cây Commit. Điều này có nghĩa là bất kỳ công việc nào đang chờ xử lý trong Chỉ mục Staging và Thư mục Làm việc sẽ bị mất.  
+Hãy tiếp tục với kho chứa ví dụ ở trên. Đầu tiên, chúng ta tạo ra vài thay đổi mới:
+```
+$ echo 'new file content' > new_file
+$ git add new_file
+$ echo 'changed content' >> reset_lifecycle_file
+```
+Lệnh này tạo file mới new_file và đưa vào hàng chờ, đồng thời sửa đổi nội dung reset_lifecycle_file nhưng chưa add. Hãy xem git status:
+```
+$ git status
+On branch main
+Changes to be committed:
+  (use "git reset HEAD <file>..." to unstage)
+
+	new file:   new_file
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working directory)
+
+	modified:   reset_lifecycle_file
+```
+Kiểm tra trạng thái Staging Index bằng lệnh debug:
+```
+$ git ls-files -s
+100644 8e66654a5477b1bf4765946147c49509a431f963 0 new_file
+100644 d7d77c1b04b5edd5acfc85de0b592449e5303770 0 reset_lifecycle_file  
+```
+Chúng ta thấy new_file đã nằm trong Index. File reset_lifecycle_file có thay đổi dưới Working Directory nhưng mã SHA trong Index vẫn giữ nguyên vì chưa gõ lệnh git add.
+
+Bây giờ, chúng ta kích hoạt một cú Hard Reset về commit gần nhất: 
+```
+$ git reset --hard
+HEAD is now at dc67808 update content of reset_lifecycle_file
+$ git status
+On branch main
+nothing to commit, working tree clean
+$ git ls-files -s
+100644 d7d77c1b04b5edd5acfc85de0b592449e5303770 0 reset_lifecycle_file
+```
+Git thông báo HEAD hiện đang trỏ về commit dc67808. Kiểm tra git status, hệ thống báo trạng thái sạch tinh tươm. Xem lại Staging Index, file new_file đã hoàn toàn biến mất, mã SHA của reset_lifecycle_file quay về nguyên bản. Toàn bộ công sức viết file mới và sửa file cũ của bạn đã bị hủy diệt vĩnh viễn và không thể lấy lại.
+
+#### --mixed
+Đây là chế độ hoạt động mặc định của lệnh reset. Các con trỏ tham chiếu được cập nhật. Staging Index bị reset về trạng thái của commit chỉ định, nhưng Thư mục làm việc (Working Directory) được giữ nguyên. Bất kỳ thay đổi nào bị loại bỏ khỏi Staging Index sẽ bị đẩy ngược về thành file đỏ ở Working Directory.
+
+Hãy lặp lại thí nghiệm tạo file rác như trên và gõ git add cho cả hai:
+```
+$ echo 'new file content' > new_file
+$ git add new_file
+$ echo 'append content' >> reset_lifecycle_file
+$ git add reset_lifecycle_file
+$ git status
+On branch main
+Changes to be committed:
+	new file:   new_file
+	modified:   reset_lifecycle_file
+```
+Bây giờ, chúng ta thực hiện lệnh Mixed Reset (hoặc chỉ gõ git reset trống):
+```
+$ git reset --mixed
+$ git status
+On branch main
+Changes not staged for commit:
+	modified:   reset_lifecycle_file
+
+Untracked files:
+	new_file
+```
+Kiểm tra lại cây Index:
+```
+$ git ls-files -s
+100644 d7d77c1b04b5edd5acfc85de0b592449e5303770 0 reset_lifecycle_file
+```
+Kết quả rõ ràng: Staging Index đã bị dọn sạch (file new_file biến mất khỏi Index), nhưng toàn bộ nội dung code bạn vừa gõ không bị mất đi. Chúng chỉ bị đẩy ngược về làm file đỏ (Untracked và Chứa sửa đổi) nằm ở Working Directory để bạn sửa đổi tiếp. Điều này an toàn hơn nhiều so với --hard.
+
+#### --soft
+Khi tham số --soft được truyền vào, các con trỏ tham chiếu commit được cập nhật và lệnh dừng lại ở đó. Cả Staging Index lẫn Working Directory đều hoàn toàn không bị đụng tới.
+
+Hành vi này rất khó để nhìn thấy nếu bạn chỉ reset về HEAD (vì mặc định hệ thống đang đứng ở HEAD rồi nên lùi về HEAD sẽ không thấy gì thay đổi). Để thấy rõ sức mạnh của --soft, chúng ta phải chọn một mục tiêu commit cũ hơn trong quá khứ.
+
+Hãy tạo một commit mới để đẩy lịch sử lên 3 commit:
+```
+$ git commit -am"prepend content to reset_lifecycle_file"
+```
+Xem lịch sử bằng git log để lấy mã ID của commit đầu tiên ("initial commit"):
+```
+$ git log
+commit 62e793f6941c7e0d4ad9a1345a175fe8f45cb9df (HEAD -> main)
+prepend content to reset_lifecycle_file
+
+commit dc67808a6da9f0dec51ed16d3d8823f28e1a72a8
+update content of reset_lifecycle_file
+
+commit 780411da3b47117270c0e3a8d5dcfd11d28d04a4
+initial commit
+```
+Mã ID commit gốc của chúng ta ở đây là 780411da3b47117270c0e3a8d5dcfd11d28d04a4. Trước khi thực hiện cú nhảy vọt thời gian, hãy check trạng thái: dự án đang sạch sẽ.
+
+Bây giờ, hãy kích hoạt cú Soft Reset giật lùi lịch sử về tận commit đầu tiên:
+```
+$ git reset --soft 780411da3b47117270c0e3a8d5dcfd11d28d04a4
+$ git status
+On branch main
+Changes to be committed:
+	modified:   reset_lifecycle_file
+```
+Hãy xem điều kỳ diệu xảy ra: Khi gõ git log, bạn thấy lịch sử chỉ còn lại duy nhất một commit đầu tiên (initial commit), hai commit sau đã bị xóa sổ khỏi trục thời gian. Tuy nhiên, khi gõ git status, toàn bộ code của hai commit bị xóa kia không hề mất đi, chúng đang nằm nguyên vẹn, gọn gàng dưới dạng các file màu xanh lá cây trong mục "Changes to be committed".  
+**Bản chất ngầm:** Vì --soft không chạm vào Staging Index, nên toàn bộ dữ liệu tích lũy trong Index đã đi theo bạn lùi về quá khứ. Lệnh này cực kỳ hữu ích khi bạn muốn gom 3-4 commit nhỏ, vụn vặt trước đó lại thành một cú commit lớn duy nhất cho sạch lịch sử dự án.
+
+### Resetting vs Reverting
+Nếu coi git revert là một cách hủy bỏ thay đổi "an toàn", thì bạn có thể coi git reset là một phương pháp đầy nguy hiểm. Nguy cơ mất dữ liệu với git reset là rất cao.
+
+Lệnh reset không bao giờ xóa hẳn một commit, tuy nhiên, các commit bị đẩy lùi sẽ rơi vào trạng thái "mồ côi" (orphaned) – nghĩa là không có một đường dẫn trực tiếp nào từ các nhánh trỏ tới chúng được nữa. Bạn thường có thể tìm và cứu lại các commit mồ côi này bằng lệnh git reflog. Tuy nhiên, nếu để quá lâu, cơ chế dọn rác tự động ngầm (Garbage Collector) của Git sẽ quét qua và tiêu hủy vĩnh viễn chúng (mặc định chu kỳ dọn rác là 30 ngày).
+
+| Tiêu chí so sánh | `git revert` | `git reset` |
+| :--- | :--- | :--- |
+| **Mục đích thiết kế** | Hủy bỏ các commit **công khai trên mạng** (Public/Shared Repo). | Hủy bỏ các thay đổi **nội bộ dưới máy local** (Private/Local). |
+| **Tác động lịch sử** | **Giữ nguyên lịch sử cũ**, viết thêm 1 commit đảo ngược mới vào tương lai. | **Cắt cụt lịch sử**, kéo giật lùi các con trỏ về quá khứ. |
+| **Mức độ an toàn** | **An toàn tuyệt đối**, không gây mất code và không làm gián đoạn tiến độ của nhóm. | **Nguy hiểm**, dễ gây mất trắng code chưa commit hoặc gây xung đột nếu lỡ push lên mạng. |
+
+### Tuyệt đối không Reset lịch sử công khai (Public History)
+
+Bạn không bao giờ được phép sử dụng git reset <commit> khi mà các commit phía sau mốc đó đã được gõ lệnh git push đẩy lên kho chứa chung của toàn đội.
+
+Khi bạn xóa một commit mà các thành viên khác trong đội đã tải về và đang dựa vào đó để viết tiếp code, một thảm họa cộng tác sẽ xảy ra. Khi họ tiến hành đồng bộ (pull) với kho chứa của bạn, lịch sử dự án của họ sẽ đột ngột bị đứt gãy và biến mất một đoạn. Ngay khi bạn tạo các commit mới sau cú reset, Git sẽ hiểu rằng nhánh cục bộ của bạn đã bị rẽ hướng lệch pha (diverged) hoàn toàn so với nhánh origin/main trên server từ xa. Việc ép buộc gộp nhánh lúc này sẽ sinh ra hàng tá commit xung đột (conflict), gây bối rối và ức chế cho toàn bộ đội ngũ của bạn.
+
+Quy tắc cốt lõi: Chỉ dùng git reset cho các cuộc thử nghiệm viết code thất bại ở dưới máy cá nhân của riêng bạn. Một khi code đã lên mạng, hãy luôn luôn trung thành với git revert.
+
+### Examples
+- git reset <tên_file>: Rút một file cụ thể ra khỏi hàng chờ Staging Area, nhưng giữ nguyên nội dung file đó ở Working Directory. Giúp hủy lệnh git add cho từng file mà không làm mất code.
+- git reset: Hủy bỏ hàng chờ Staging Area của tất cả mọi file để bạn xây dựng lại ảnh chụp commit từ đầu, thư mục làm việc không bị ảnh hưởng.
+- git reset --hard: Xóa sạch cả hàng chờ lẫn thư mục làm việc về trạng thái của commit gần nhất. Xóa sổ mọi code đang gõ dở chưa commit.
+
+- git reset <mã_commit>: Di chuyển con trỏ nhánh hiện tại giật lùi về commit cũ, đưa Staging Index về mốc đó, nhưng giữ nguyên code ở Working Directory dưới dạng file đỏ.
+
+- git reset --hard <mã_commit>: Kéo giật lùi dòng thời gian về commit cũ, đồng thời san phẳng, xóa sạch mọi dữ liệu ở cả hàng chờ lẫn thư mục làm việc để khớp 100% với commit cũ đó.
+
+### Unstaging a file
+Bạn đang chuẩn bị commit code, lỡ tay gõ git add . gom cả hai file hello.py và main.py vào hàng chờ. Bạn chợt nhận ra hai file này thuộc hai tính năng khác nhau, nên được lưu ở hai commit riêng biệt để lịch sử được rõ ràng.
+```
+# 1. Bạn lỡ tay đưa tất cả vào hàng chờ
+git add .
+
+# 2. Bạn dùng reset để rút riêng file main.py ra ngoài
+git reset main.py
+
+# 3. Lúc này trong hàng chờ chỉ còn hello.py, bạn commit nó trước
+git commit -m "Make some changes to hello.py"
+
+# 4. Bây giờ bạn add file main.py vào lại để tạo commit thứ hai
+git add main.py
+git commit -m "Edit main.py"
+```
+Nhờ git reset, bạn có thể kiểm soát cực kỳ tinh tế các file nào được phép lọt vào cú commit tiếp theo.
+
+### Removing local commits
+Ví dụ tiếp theo minh họa một trường hợp sử dụng nâng cao hơn. Nó cho thấy điều gì xảy ra khi bạn đã làm việc trên một thử nghiệm mới được một thời gian, nhưng quyết định loại bỏ hoàn toàn nó sau khi đã lưu một vài ảnh chụp nhanh.
+```
+# Sử dụng ký hiệu HEAD~2 để ra lệnh cho Git lùi lại chính xác 2 commit trong lịch sử
+git reset --hard HEAD~2
+```
+Lệnh này di chuyển nhánh hiện tại lùi lại 2 bước, xóa sạch 2 commit thử nghiệm vừa tạo khỏi lịch sử, đồng thời xóa luôn file foo.py trên ổ cứng, trả lại cho bạn một thư mục làm việc sạch sẽ giống hệt như trước khi bạn làm thí nghiệm. (Nhắc lại: Chỉ làm việc này khi 2 commit kia chưa được push lên GitHub).
+
+## Git rm
+Một câu hỏi vô cùng phổ biến khi mới bắt đầu học Git là: "Làm thế nào để tôi bảo Git ngừng theo dõi một hoặc nhiều file nào đó?". Lệnh git rm chính là câu trả lời, nó được sử dụng để xóa các file ra khỏi một kho chứa Git. Bạn có thể coi lệnh này là hành động nghịch đảo (trái ngược) của lệnh git add.
+
+### Git rm overview
+
+Lệnh git rm có thể được dùng để xóa một file đơn lẻ hoặc một tập hợp nhiều file. Chức năng chính của git rm là loại bỏ các file đang được theo dõi (tracked files) ra khỏi hàng chờ Git Index.
+
+Bên cạnh đó, khi thực thi, git rm sẽ xóa file ở cả hai nơi: Hàng chờ Staging Area và Thư mục làm việc (Working Directory). Git không cung cấp tùy chọn nào để chỉ xóa file duy nhất ở thư mục làm việc mà giữ lại trong hàng chờ.
+
+### Cơ chế chặn để bảo vệ dữ liệu gõ dở
+Các file được chọn để xóa phải có nội dung hoàn toàn trùng khớp với phiên bản nằm ở cú commit gần nhất (HEAD). Nếu có bất kỳ sự sai lệch nào giữa phiên bản file ở HEAD so với phiên bản đang nằm trong hàng chờ hoặc thư mục làm việc (tức là bạn đang sửa dở file đó mà chưa commit), Git sẽ lập tức chặn hành động xóa lại. Cơ chế chặn này là một chốt chặn an toàn để ngăn bạn vô tình xóa mất các thay đổi quan trọng đang làm dở.
+**Lưu ý:** Lệnh git rm không dùng để xóa nhánh (branch).
+
+### Usage
+```
+<file>...
+```
+Chỉ định các file mục tiêu muốn xóa. Bạn có thể truyền vào một file đơn lẻ, một danh sách các file cách nhau bằng khoảng trắng (file1 file2 file3), hoặc sử dụng ký tự đại diện wildcard (./directory/*).
+
+```
+-f or --force
+```
+Tham số "ép buộc". Dùng để ghi đè lên cơ chế chặn an toàn của Git, ép hệ thống phải xóa file ngay cả khi nội dung file ở thư mục làm việc hoặc hàng chờ đang khác so với HEAD (đang sửa dở).
+```
+-n or --dry-run
+```
+Chạy thử nghiệm an toàn. Git sẽ mô phỏng lệnh xóa và hiển thị ra màn hình danh sách những file nào sẽ bị xóa, nhưng hoàn toàn chưa phá hủy bất kỳ dữ liệu thật nào.
+```
+-r
+```
+Viết tắt của "recursive" (đệ quy). Khi muốn xóa nguyên một thư mục, bạn bắt buộc phải thêm tham số -r này để Git quét sạch thư mục đó cùng toàn bộ các file/thư mục con bên trong.
+```
+--
+```
+Dấu ngăn cách. Dùng để phân tách rõ ràng giữa danh sách tên file và các tham số lệnh phía trước. Việc này cực kỳ hữu ích nếu bạn đặt tên file có chứa các ký tự đặc biệt dễ bị Git hiểu nhầm thành một tham số cấu hình.
+```
+--cached
+```
+Tham số này ra lệnh cho Git chỉ xóa file trong hàng chờ Staging Index nhưng GIỮ NGUYÊN file đó trên ổ cứng thư mục làm việc. File của bạn sẽ không bị mất, nó chỉ bị biến từ file màu xanh (Tracked) thành file màu đỏ (Untracked) để bạn cho vào .gitignore.
+```
+--ignore-unmatch
+```
+Ép lệnh trả về mã trạng thái thành công bằng 0 (Unix status code) ngay cả khi không tìm thấy file nào khớp với mô tả để xóa. Tham số này rất hữu ích khi bạn viết git rm trong các đoạn mã script tự động chạy ngầm và muốn nó tự bỏ qua lỗi nếu file không tồn tại.
+```
+-q or --quiet
+```
+Chế độ im lặng, ẩn toàn bộ thông báo kết quả ra màn hình. Bình thường, cứ mỗi file bị xóa, Git sẽ in ra một dòng thông báo.
+
+### How to undo git rm
+Việc chạy lệnh git rm chưa phải là một thay đổi vĩnh viễn. Lệnh này mới chỉ cập nhật trên Thư mục làm việc và Hàng chờ mà thôi. Thay đổi này sẽ không bị đóng băng cho đến khi bạn tạo một cú commit mới. Điều này đồng nghĩa với việc bạn hoàn toàn có thể "quay xe" cứu file bằng các lệnh quen thuộc:
+- Cách 1: Rút lệnh xóa khỏi hàng chờ
+```
+git reset HEAD .
+```
+Lệnh này đưa hàng chờ Staging Area của file quay trở lại trạng thái của commit HEAD, hủy bỏ hiệu lực của git rm.
+
+- Cách 2: Tải lại file từ quá khứ về thư mục
+```
+git checkout .
+```
+Lệnh này sẽ lấy phiên bản file mới nhất đang được lưu an toàn trong commit HEAD và đắp ngược trở lại vào thư mục làm việc của bạn.
+
+**Trường hợp đã lỡ tay Commit lệnh xóa:** Nếu bạn đã gõ git rm và cũng đã gõ luôn git commit, file đã biến mất khỏi lịch sử hiện tại. Bạn hãy sử dụng lệnh git reflog để tìm lại mã băm commit tại thời điểm trước khi lệnh xóa diễn ra và tiến hành khôi phục lại.
+
+### Discussion 
+Các đối số <file> truyền vào có thể là đường dẫn chính xác, mẫu ký tự đại diện wildcard, hoặc tên thư mục. Lệnh chỉ có tác dụng với các đường dẫn hiện đang được commit và theo dõi bởi Git.  
+### Hãy cẩn thận khi dùng ký tự đại diện
+Việc dùng dấu sao * để xóa hàng loạt có thể quét qua nhiều thư mục con và rất dễ gây tai nạn. Hãy so sánh hai ví dụ: directory/* và directory*:
+
+directory/*: Sẽ xóa toàn bộ các file con nằm bên trong thư mục directory/.
+
+directory*: Sẽ xóa sạch tất cả các thư mục đồng cấp có tên bắt đầu bằng chữ directory, ví dụ: directory1, directory2, directory_whatever... Đây thường là một kết quả tai hại ngoài ý muốn.
+
+### Phạm vi ảnh hưởng của git rm
+Lệnh git rm chỉ có tác dụng trên nhánh hiện tại bạn đang đứng. Sự kiện xóa file chỉ mới diễn ra trên hai cây dữ liệu là Working Directory và Staging Index, hoàn toàn chưa ghi vào lịch sử Commit History cho đến khi có commit mới.
+
+### Tại sao nên dùng git rm thay vì lệnh rm của hệ điều hành?
+
+Nếu bạn dùng lệnh rm mặc định của Linux/Mac (hoặc bấm chuột phải chọn Delete file trên Windows):
+
+File sẽ bị xóa khỏi Thư mục làm việc (Working Directory).
+
+Khi gõ git status, Git sẽ nhận ra file bị thiếu và hiện file màu đỏ.
+
+Tuy nhiên, Hàng chờ Staging Index vẫn chưa biết gì. Bạn bắt buộc phải gõ thêm lệnh git add <đường_dẫn_file> thì Git mới đưa trạng thái xóa đó vào hàng chờ.
+
+Lệnh git rm hoạt động như một phím tắt thông minh. Nó thực hiện đồng thời cả 2 bước: Xóa file trên ổ cứng + Cập nhật luôn trạng thái xóa vào hàng chờ Staging Area. Bạn bớt được một công đoạn gõ lệnh.
+
+### Examples
+#### Ví dụ 1: Xóa file theo định dạng bằng Wildcard
+```
+git rm Documentation/\*.txt
+```
+**Ý nghĩa:** Xóa toàn bộ các file có đuôi .txt nằm trong thư mục Documentation/ và tất cả các thư mục con của nó.
+Dấu gạch chéo ngược \ đứng trước dấu sao \* là để bảo vệ, ngăn không cho trình Terminal của máy tính tự ý phân tách dấu sao trước khi lệnh được truyền vào cho Git xử lý.
+
+#### Ví dụ 2: Ép buộc xóa file đang sửa dở
+```
+git rm -f git-*.sh
+```
+**Ý nghĩa:** Sử dụng tham số -f để xóa áp đặt toàn bộ các file script có tên dạng git-*.sh ra khỏi cả thư mục làm việc lẫn hàng chờ, bất chấp việc file đó có đang bị sửa dở hay không.
+
+### Cách dọn dẹp hệ thống khi lỡ xóa file bằng lệnh rm thường
+Như đã giải thích ở trên, nếu bạn lỡ dùng lệnh rm của hệ điều hành để xóa hàng loạt hàng chục file, kho chứa của bạn sẽ rơi vào trạng thái khá hỗn độn (file mất trên ổ cứng nhưng Git vẫn báo đang theo dõi ngầm).
+
+- Giải pháp 1 (Nhanh nhất): Nếu bạn muốn chốt commit luôn toàn bộ các file vừa xóa đó, hãy gõ tham số -a khi commit:
+```
+git commit -a -m "Xác nhận xóa các file"
+```
+Tham số -a sẽ tự động quét và đưa tất cả các sự kiện xóa file ngoài ổ cứng cập nhật vào hàng chờ Staging Area để commit luôn.
+
+- Giải pháp 2 (Đồng bộ hàng chờ): Nếu bạn muốn cập nhật trạng thái xóa của các file đó vào hàng chờ trước rồi mới commit sau, hãy dùng chuỗi lệnh kết hợp (đường ống Pipe của Unix) sau:
+```
+git diff --name-only --diff-filter=D -z | xargs -0 git rm --cached
+```
+Lệnh này sẽ tự lọc ra danh sách tất cả các file đã bị xóa (--diff-filter=D) ngoài ổ cứng, rồi truyền danh sách đó vào lệnh git rm --cached để dọn sạch hàng chờ Staging Area giúp bạn.
+
+## Rewriting history
+### Changing the Last Commit:git commit --amend
+Lệnh git commit --amend là một cách tiện lợi để sửa đổi cú commit gần đây nhất. Nó cho phép bạn kết hợp các thay đổi đang nằm trong hàng chờ (staged changes) với commit ngay trước đó thay vì phải tạo ra một commit mới tinh. Nó cũng có thể được dùng để đơn thuần là chỉnh sửa lại lời nhắn commit (commit message) trước đó mà không làm thay đổi ảnh chụp code của nó.
+
+Tuy nhiên, bạn cần hiểu rằng hành động amend không chỉ đơn giản là sửa đổi commit gần nhất, nó thay thế hoàn toàn commit đó. Điều này có nghĩa là commit sau khi amend sẽ là một thực thể mới hoàn toàn với mã băm tham chiếu (ref) riêng của nó. Đối với Git, nó sẽ nhìn nhận đây như một commit mới tinh (được minh họa bằng dấu sao * trong các sơ đồ cấu trúc). Có một vài kịch bản phổ biến để sử dụng git commit --amend dưới đây:
+
+1. Thay đổi lời nhắn (commit message) của commit gần nhất
+```
+git commit --amend
+```
+- Giả sử bạn vừa commit xong và phát hiện ra mình viết sai chính tả hoặc sai quy chuẩn trong lời nhắn commit. Việc chạy lệnh này khi không có file nào nằm trong hàng chờ (staging area trống) sẽ cho phép bạn mở trình soạn thảo để sửa lại lời nhắn của commit trước đó mà không làm thay đổi nội dung code bên trong ảnh chụp.
+
+- Những cú commit vội vã (premature commits) xảy ra thường xuyên trong quá trình phát triển hàng ngày. Bạn rất dễ quên chưa add một file hoặc viết sai định dạng lời nhắn. Tham số --amend là một cách tiện lợi để sửa các lỗi nhỏ này.
+
+```
+git commit --amend -m "an updated commit message"
+```
+- Việc thêm tùy chọn -m cho phép bạn truyền trực tiếp lời nhắn mới từ dòng lệnh mà không cần hệ thống phải mở trình soạn thảo văn bản lên nữa.
+
+2. Thay đổi các file đã commit (Sửa đổi nội dung)
+- Ví dụ sau đây minh họa một kịch bản rất kinh điển. Giả sử bạn vừa sửa xong hai file hello.py và main.py và muốn lưu chúng chung trong một ảnh chụp commit duy nhất. Tuy nhiên, ở lượt gõ lệnh đầu tiên, bạn lại lỡ quên mất không add file main.py:
+```
+# Sửa cả hello.py và main.py
+git add hello.py
+git commit 
+# Chợt nhận ra bạn đã quên chưa đưa thay đổi của main.py vào commit!
+git add main.py 
+git commit --amend --no-edit
+```
+Tham số --no-edit sẽ cho phép bạn thực hiện việc bổ sung file vào commit cũ mà không làm thay đổi lời nhắn commit sẵn có. Commit mới sau đó sẽ thay thế hoàn toàn cho commit thiếu sót trước đó, và trên lịch sử trông sẽ như thể bạn đã commit cả hello.py và main.py cùng một lúc ngay từ đầu.
+
+#### ĐIỀU CẤM KỴ: Không amend các commit công khai (Public Commits)
+
+Như đã phân tích, các commit sau khi amend thực chất là các commit mới tinh và commit cũ trước đó sẽ biến mất khỏi nhánh hiện tại của bạn. Việc này mang lại hậu quả tai hại tương tự như việc bạn dùng git reset trên một ảnh chụp công khai. Tuyệt đối tránh amend một commit mà các lập trình viên khác trong đội đang dựa vào đó để phát triển tiếp. Đây là một tình huống cực kỳ dễ gây hỗn loạn cho cả đội và rất phức tạp để khôi phục lại dữ liệu đồng bộ.
+
+#### Changing older or multiple commits (Sửa các commit cũ hoặc nhiều commit)
+
+Để sửa đổi các commit cũ hơn hoặc sửa đổi nhiều commit cùng một lúc, bạn có thể sử dụng git rebase để kết hợp một chuỗi các commit thành một commit nền tảng mới (new base commit). Ở chế độ tiêu chuẩn, git rebase cho phép bạn viết lại lịch sử một cách cơ học – tự động áp dụng các commit ở nhánh làm việc hiện tại lên ngọn của nhánh được truyền vào. Vì các commit mới của bạn sẽ thay thế các commit cũ, điều tối quan trọng là không được sử dụng git rebase trên các commit đã được push lên mạng công khai, nếu không lịch sử dự án của bạn trên server sẽ hiển thị như thể bị biến mất một đoạn.
+
+Trong các tình huống cần phải giữ cho lịch sử dự án luôn sạch sẽ và thẳng hàng, việc thêm tùy chọn -i (Interactive) vào lệnh git rebase sẽ cho phép bạn chạy rebase tương tác. Tính năng này cung cấp cho bạn cơ hội được can thiệp, chỉnh sửa từng commit riêng lẻ trong suốt quá trình chạy, thay vì phải di chuyển mù quáng toàn bộ các commit.
+
+1. Thay đổi các file đã commit trong quá khứ
+
+Trong quá trình rebase tương tác, việc bạn chọn lệnh edit (hoặc viết tắt là e) sẽ làm quy trình rebase tạm dừng lại ngay tại cú commit đó và cho phép bạn thực hiện các chỉnh sửa bổ sung bằng lệnh git commit --amend. Git sẽ ngắt quy trình và hiển thị thông báo hướng dẫn:
+
+```
+Stopped at 5d025d1... formatting
+You can amend the commit now, with
+
+ git commit --amend
+
+Once you are satisfied with your changes, run
+
+ git rebase --continue
+```
+Sau khi bạn sửa code xong, gõ git commit --amend để chốt dữ liệu, bạn chỉ cần gõ git rebase --continue để Git tiếp tục chạy các commit tiếp theo.
+
+#### Gộp các commit bằng lệnh Squash để làm sạch lịch sử
+- Lệnh squash (hoặc viết tắt là s) chính là nơi thể hiện giá trị cốt lõi cao nhất của rebase. Squash cho phép bạn chỉ định những commit nào muốn gộp (shove/merge) vào commit ngay phía trước nó. Đây chính là công cụ giúp tạo ra một "lịch sử sạch đẹp" (clean history).
+- Trong quá trình rebase chạy lại, Git sẽ thực thi lệnh được chỉ định cho từng commit. Đối với các commit được đánh dấu là squash, Git sẽ tự động mở trình soạn thảo văn bản lên và yêu cầu bạn kết hợp các lời nhắn commit lại với nhau thành một lời nhắn chung duy nhất.
+- Lưu ý về định danh: Các commit được chỉnh sửa hoặc tạo ra thông qua lệnh rebase sẽ sở hữu một Mã ID (Commit Hash) hoàn toàn mới khác biệt với các commit gốc ban đầu. Ngay cả các commit được đánh dấu là pick (giữ nguyên không sửa) cũng sẽ bị đổi mã ID nếu như các commit đứng trước nó trong chuỗi rebase đã bị viết lại lịch sử.
+
+### The safety net: git reflog
+- Nhật ký tham chiếu, hay "reflogs", là một cơ chế ngầm mà Git sử dụng để ghi lại mọi sự cập nhật, di chuyển của các con trỏ đầu nhánh (tips of branches) và các tham chiếu commit khác. Reflog cho phép bạn quay trở lại các commit cũ ngay cả khi chúng không còn được tham chiếu bởi bất kỳ nhánh hoặc tag nào (các commit bị mồ côi sau khi reset hoặc rebase).
+
+- Sau khi bạn viết lại lịch sử, reflog sẽ chứa đầy đủ thông tin về trạng thái cũ của các nhánh và cho phép bạn lội ngược dòng quay về trạng thái đó nếu cần thiết. Mỗi khi đầu nhánh của bạn bị cập nhật vì bất kỳ lý do gì (chuyển nhánh, kéo code mới pull, viết lại lịch sử, hoặc đơn giản là tạo commit mới), một dòng nhật ký mới sẽ lập tức được ghi nhận vào reflog.
+
+### Các câu lệnh cơ bản:
+- git reflog: Hiển thị danh sách nhật ký tham chiếu của kho chứa cục bộ dưới máy bạn.
+
+- git reflog --relative-date: Hiển thị nhật ký kèm theo thông tin thời gian tương đối (ví dụ: 2 weeks ago - 2 tuần trước) giúp bạn dễ định vị thời điểm xảy ra hành động.
+#### Ví dụ thực tế về việc cứu dữ liệu bằng Reflog:
+Hãy cùng xem một đoạn kết quả đầu ra của lệnh git reflog:
+```
+0a2e358 HEAD@{0}: reset: moving to HEAD~2
+0254ea7 HEAD@{1}: checkout: moving from 2.2 to main
+c10f740 HEAD@{2}: checkout: moving from main to 2.2
+```
+Đoạn reflog trên ghi nhận hành động di chuyển: Đầu tiên là checkout từ nhánh main sang nhánh 2.2 và ngược lại. Hành động mới nhất nằm ở trên cùng labeled HEAD@{0}: Người dùng vừa thực hiện một cú git reset --hard giật lùi về quá khứ mất 2 commit.
+
+Nếu cú reset đó là một tai nạn tai hại khiến bạn bị mất code, bạn nhìn xuống dòng dưới HEAD@{1}, bạn thấy mã commit của nhánh main ngay trước khi bị reset là 0254ea7. Bạn hoàn toàn có thể cứu lại 2 commit tưởng như đã mất bằng lệnh:
+
+```
+git reset --hard 0254ea7
+```
+Bằng cách này, bạn đưa nhánh main quay trở lại đúng vị trí an toàn trước khi vụ tai nạn xảy ra. Reflog chính là tấm lưới bảo hiểm tối cao cứu mạng bạn trong các tình huống viết lại lịch sử bị lỗi.
+
+**Các điều kiện ràng buộc của Reflog:**
+
+Reflog chỉ cung cấp lưới bảo hiểm nếu như các file của bạn đã được gõ lệnh commit thành công dưới máy local từ trước. Code đang gõ dở chưa commit sẽ không được reflog cứu.
+
+Reflog chỉ hoạt động và lưu trữ cục bộ trên máy của riêng bạn, nó không được push lên server từ xa.
+
+Các dòng nhật ký reflog có hạn sử dụng. Mặc định, Git cấu hình tự động xóa bỏ các dòng reflog cũ sau 90 ngày.
+
+## Git rebase
+Rebase là một trong hai công cụ của Git chuyên về việc tích hợp các thay đổi từ nhánh này sang nhánh khác. Công cụ tích hợp thay đổi còn lại chính là git merge. Lệnh Merge luôn luôn là một bản ghi lịch sử tiến về phía trước. Ngược lại, rebase sở hữu những tính năng viết lại lịch sử vô cùng mạnh mẽ. Bản thân Rebase có 2 chế độ hoạt động chính: Chế độ "Tiêu chuẩn" (Manual/Standard) và Chế độ "Tương tác" (Interactive).
+### What is git rebase?
+Tái cấu trúc nền tảng (Rebasing) là quá trình di chuyển hoặc kết hợp một chuỗi các commit sang một commit nền tảng mới (base commit). Rebase hữu ích nhất và dễ hình dung nhất trong bối cảnh của quy trình làm việc phân nhánh tính năng (feature branching workflow).
+
+Xét về mặt nội dung, rebase là hành động thay đổi gốc nền tảng của nhánh của bạn từ commit này sang commit khác, làm cho nó trông như thể bạn đã tạo nhánh đó từ một commit hoàn toàn khác ngay từ đầu.
+
+Về mặt nội bộ, Git đạt được điều này bằng cách tạo ra các commit mới tinh và áp chúng vào gốc nền tảng được chỉ định. Việc thấu hiểu điều này là vô cùng quan trọng: Mặc dù về mặt trực quan cái nhánh đó trông có vẻ giống hệt nhau, nhưng nó lại được cấu thành từ những commit có mã định danh hoàn toàn mới.
+
+### Usage
+Lý do hàng đầu cho việc sử dụng rebase là nhằm duy trì một lịch sử dự án tuyến tính (thẳng hàng). Hãy tưởng tượng tình huống khi nhánh main đã tiến thêm vài commit kể từ ngày bạn tách nhánh tính năng (feature_branch) ra làm riêng. Bạn muốn đem những cập nhật mới nhất của main vào nhánh của mình, nhưng đồng thời muốn giữ cho lịch sử của nhánh thật sạch sẽ, như thể bạn chỉ vừa mới tách nhánh từ cú commit mới nhất của main. Điều này mang lại lợi ích rất lớn cho việc gộp nhánh (merge) sạch đẹp về sau.
+
+### Tại sao chúng ta lại muốn duy trì một "Lịch sử sạch"?
+Lợi ích của một lịch sử thẳng hàng sẽ trở nên cực kỳ rõ rệt khi bạn thực hiện các thao tác Git để điều tra nguồn gốc của một lỗi logic mới phát sinh (regression). Hãy xem một kịch bản thực tế:
+
+1. Một lỗi (bug) được phát hiện trên nhánh main. Một tính năng vốn đang chạy ngon lành bỗng dưng bị hỏng.
+
+1. Lập trình viên kiểm tra lịch sử của main bằng lệnh git log. Nhờ có một "lịch sử sạch", lập trình viên có thể nhanh chóng đọc hiểu và nắm bắt mạch tư duy của dự án.
+
+1. Nếu lập trình viên vẫn chưa thể tìm ra chính xác lỗi xuất hiện từ khi nào bằng mắt thường, họ sẽ kích hoạt lệnh git bisect.
+
+1. Vì lịch sử Git thẳng hàng và không có các commit gộp nhánh chằng chịt, git bisect có được một tập hợp các commit cực kỳ chuẩn xác để so sánh nhị phân. Lập trình viên nhanh chóng định vị được commit gây lỗi và đưa ra phương án xử lý.
+
+Bạn có hai lựa chọn để tích hợp nhánh tính năng vào nhánh chính: Gộp trực tiếp (merge) hoặc Rebase trước rồi mới gộp.
+
+- Cách gộp trực tiếp sẽ tạo ra một cú gộp 3 đường (3-way merge) và tự sinh một commit gộp (merge commit) làm rối dòng lịch sử.
+- Cách rebase trước sẽ giúp bạn tạo ra một cú gộp tiến thẳng (fast-forward merge) và một lịch sử tuyến tính hoàn hảo.
+
+#### Rebase là cách phổ biến để tích hợp các thay đổi từ thượng nguồn (upstream) về kho chứa cục bộ. Việc kéo code bằng git merge sẽ tự đẻ ra một commit gộp thừa thãi mỗi khi bạn muốn cập nhật tiến độ dự án. Ngược lại, rebase giống như việc bạn tuyên bố: "Tôi muốn đặt nền móng các thay đổi của tôi lên trên những gì mà mọi người đã hoàn thành trước đó."
+
+### ĐIỀU CẤM KỴ: Không rebase lịch sử công khai
+- Như đã nhấn mạnh ở các chương trước, bạn không bao giờ được phép rebase các commit một khi chúng đã được push lên server công khai. Hành động rebase sẽ thay thế các commit cũ bằng các commit mới, và đối với những người dùng khác trong đội, một đoạn lịch sử dự án của họ sẽ bỗng dưng bị bốc hơi mất tích.
+
+### Git rebase standard vs git rebase interactive
+
+Lệnh Rebase tương tác xuất hiện khi chúng ta truyền thêm tham số -i (viết tắt của Interactive). Nếu không viết gì, lệnh sẽ chạy ở chế độ tiêu chuẩn. Trong cả hai trường hợp, hãy giả định chúng ta vừa tạo một nhánh tính năng từ main:
+
+```
+# Tạo nhánh tính năng từ main và chuyển sang làm việc
+git checkout -b feature_branch main
+# Chỉnh sửa code và commit
+git commit -a -m "Adds new feature"
+```
+
+1. Chế độ tiêu chuẩn (Standard Mode)
+```
+git rebase <base>
+```
+Lệnh này sẽ tự động bốc toàn bộ các commit ở nhánh làm việc hiện tại của bạn và đem xếp chồng lên trên ngọn của nhánh <base> được truyền vào (Tham số <base> có thể là tên một nhánh khác, mã commit ID, một cái tag hoặc một tham chiếu tương đối tới HEAD).
+
+1. Chế độ tương tác (Interactive Mode)
+```
+git rebase --interactive <base>
+```
+
+Thay vì mù quáng di chuyển toàn bộ các commit sang nền tảng mới, rebase tương tác trao cho bạn cơ hội được chỉnh sửa từng commit một trong suốt quá trình chạy. Nó cho phép bạn dọn dẹp lịch sử bằng cách xóa bỏ, chia tách hoặc nhào nặn lại một chuỗi commit cũ. Lệnh này hoạt động giống như một phiên bản git commit --amend nhưng được tiếp thêm "bột tăng lực".
+
+Khi gõ lệnh này, một trình soạn thảo văn bản sẽ mở ra và liệt kê danh sách các commit kèm theo các từ khóa hành động (lệnh điều hướng) đứng ở đầu. Bạn có thể thay đổi các từ khóa này hoặc đảo thứ tự các dòng để sắp xếp lại lịch sử:
+
+```
+pick 231360some old commit
+pick ee2adc2 Adds new feature
+
+# Rebase 2cf755d..ee2adc2 onto 2cf755d (9 commands)
+#
+# Commands:
+# p, pick = giữ nguyên và sử dụng commit này
+# r, reword = sử dụng commit nhưng dừng lại để sửa lời nhắn (commit message)
+# e, edit = sử dụng commit nhưng dừng lại để sửa nội dung code bên trong
+# s, squash = gộp nội dung commit này vào commit ngay phía trước nó
+# f, fixup = giống như "squash", nhưng xóa bỏ luôn lời nhắn của commit này
+# x, exec = chạy một câu lệnh shell script test hệ thống ngầm trên commit này
+# d, drop = xóa bỏ, vứt xó hoàn toàn commit này
+```
+
+### Configuration options
+Bạn có thể thiết lập một số thuộc tính của rebase thông qua câu lệnh git config để thay đổi cách hiển thị và hành vi của hệ thống:  
+- rebase.stat: Định dạng kiểu Boolean (mặc định là false). Tùy chọn này dùng để bật/tắt việc hiển thị sơ đồ phân tích diffstat trực quan, cho thấy những gì đã thay đổi kể từ lần rebase cuối cùng.
+
+- rebase.autoSquash: Giá trị Boolean dùng để bật/tắt tự động tính năng gộp commit (--autosquash).
+
+- rebase.missingCommitsCheck: Thay đổi hành vi của rebase khi phát hiện có commit bị thiếu trong quá trình chạy tương tác. Có thể nhận các giá trị:
+
+- warn: In ra cảnh báo trong chế độ tương tác nếu phát hiện có commit bị xóa bỏ.
+
+- error: Chặn đứng quy trình rebase và in ra thông báo lỗi cảnh báo dữ liệu.
+
+- ignore: (Mặc định) Bỏ qua và lờ đi mọi cảnh báo về việc thiếu commit.
+
+- rebase.instructionFormat: Chuỗi định dạng định nghĩa cách hiển thị danh sách các commit trong bảng lệnh của rebase tương tác.
+### Advanced rebase application
+Tham số --onto cho phép bạn kích hoạt một dạng rebase cực kỳ mạnh mẽ, giúp bạn chủ động "cắt đuôi" và di dời ngọn của một nhánh sang một vị trí tham chiếu hoàn toàn mới. Cú pháp đầy đủ như sau:
+```
+git rebase --onto <newbase> <oldbase>
+```
+Hãy cùng xem một kịch bản dự án đang phân nhánh chằng chịt như sau:
+```
+o---o---o---o---o  main
+     \
+       o---o---o---o---o  featureA
+            \
+             o---o---o  featureB
+```
+Nhánh featureB đang được tách ra và bám vào nền tảng của nhánh featureA. Tuy nhiên, bạn chợt nhận ra các tính năng trong featureB hoàn toàn độc lập, không cần dùng bất kỳ đoạn code nào của featureA cả. Bạn muốn đưa featureB về bám trực tiếp vào nhánh chính main cho sạch sẽ.
+
+Bạn thực thi câu lệnh:
+
+```
+git rebase --onto main featureA featureB
+```
+Trong đó, featureA đóng vai trò là gốc nền tảng cũ (<oldbase>), main trở thành gốc nền tảng mới tinh (<newbase>), và featureB chỉ định con trỏ HEAD sẽ di chuyển theo. Kết quả lịch sử sẽ biến đổi thành:
+```
+o---o---o  featureB
+                     /
+    o---o---o---o---o  main
+     \
+      o---o---o---o---o  featureA
+```
+
+### Understanding the dangers of rebase
+Một điểm trừ cần lưu ý khi làm việc với quy trình Rebase là xung đột code (merge conflicts) có thể xảy ra với tần suất dày đặc hơn. Điều này thường xuất hiện nếu bạn sở hữu một nhánh tính năng có tuổi thọ quá lâu (long-lived branch) và đã đi quá xa so với nhánh chính main. Đến khi bạn rebase, main đã có thêm hàng trăm commit mới, dẫn đến việc code của bạn bị xung đột chan chát qua từng commit một.
+
+**0Giải pháp khắc phục:** Hãy tạo thói quen rebase nhánh tính năng của bạn với main một cách thường xuyên (hàng ngày) và chia nhỏ các commit ra. Khi đối mặt với xung đột trong lúc rebase, bạn có thể dùng tham số --continue (để tiếp tục chạy sau khi đã fix xong xung đột) hoặc --abort (để hủy bỏ hoàn toàn lệnh rebase, đưa dự án an toàn về trạng thái trước khi gõ lệnh).
+
+Một mối nguy hiểm lớn khác là việc vô tình làm mất commit trong quá trình chạy tương tác lịch sử (khi chọn lệnh squash hoặc drop). Commit của bạn sẽ biến mất khỏi lịch sử hiển thị của nhánh. Tuy nhiên, bạn hoàn toàn có thể dùng công cụ cứu hộ git reflog để tìm lại mã băm commit mồ côi này và hoàn tác toàn bộ quy trình rebase sai lầm đó.
+
+Mối hiểm họa thực sự chỉ xảy ra khi bạn viết lại lịch sử bằng rebase tương tác, sau đó gõ lệnh ép buộc git push --force đẩy lên một nhánh chung đang được chia sẻ với nhiều người khác trên mạng. Đây là hành vi tuyệt đối phải tránh, vì nó có khả năng ghi đè và phá hủy hoàn toàn toàn bộ công sức gõ code của các đồng nghiệp khác khi họ tiến hành kéo code về.
+
+### Recovering from upstream rebase
+Nếu một người khác trong nhóm lỡ tay rebase và push --force lên một cái nhánh chung mà bạn cũng đang commit code vào đó, lệnh git pull thông thường của bạn sẽ ghi đè và phá hủy các commit của bạn bằng ngọn commit mới của họ.
+
+Để cứu vãn tình thế, bạn hãy gõ lệnh git reflog để truy vết lại lịch sử dịch chuyển con trỏ của nhánh từ xa (remote branch). Hãy tìm dòng trạng thái của nhánh đó ở thời điểm ngay trước khi vụ tai nạn rebase diễn ra để lấy mã commit ID an toàn. Sau đó, bạn sử dụng lệnh rebase nâng cao với tham số --onto (như đã học ở mục phía trên) để đem nhánh của mình gắn trở lại vào cái mốc an toàn đó là xong!
+
+## Git Reflog
+
+Lệnh git reflog là một công cụ cứu hộ trong Git. Git theo dõi các cập nhật đối với đầu ngọn của các nhánh bằng một cơ chế gọi là nhật ký tham chiếu, hay "reflogs". Rất nhiều câu lệnh Git chấp nhận một tham số để chỉ định một tham chiếu hoặc "ref" – thực chất là một con trỏ trỏ tới một commit. Các ví dụ phổ biến bao gồm:
+
+git checkout
+
+git reset
+
+git merge <ref>
+
+Reflogs ghi lại nhật ký chính xác thời điểm các Git refs được cập nhật trong kho chứa cục bộ (local repository). Ngoài việc theo dõi đầu ngọn của các nhánh, một reflog đặc biệt cũng được duy trì riêng cho bộ nhớ tạm git stash.
+
+Về mặt lưu trữ, Reflogs được lưu trong các thư mục ẩn nằm dưới thư mục .git của kho chứa cục bộ. Bạn có thể tìm thấy các thư mục dữ liệu ngầm này tại:
+
+- .git/logs/refs/heads/[tên_nhánh] (Nhật ký của từng nhánh).
+
+- .git/logs/HEAD (Nhật ký di chuyển của con trỏ HEAD).
+
+- .git/logs/refs/stash (Nhật ký của bộ nhớ tạm stash nếu đã từng sử dụng).
+
+### Basic usage
+Cách sử dụng Reflog cơ bản nhất là kích hoạt câu lệnh:
+```
+git reflog
+```
+Về bản chất, đây là một lối viết tắt và nó hoàn toàn tương đương với câu lệnh:
+```
+git reflog show HEAD
+```
+Lệnh này sẽ in ra toàn bộ nhật ký dịch chuyển của con trỏ HEAD. Bạn sẽ nhìn thấy kết quả hiển thị trên màn hình tương tự như sau:
+```
+eff544f HEAD@{0}: commit: migrate existing content
+bf871fd HEAD@{1}: commit: Add Git Reflog outline
+9a4491f HEAD@{2}: checkout: moving from main to git_reflog
+9a4491f HEAD@{3}: checkout: moving from Git_Config to main
+39b159a HEAD@{4}: commit: expand on git context 
+9b3aa71 HEAD@{5}: commit: more color clarification
+f34388b HEAD@{6}: commit: expand on color support 
+9962aed HEAD@{7}: commit: a git editor -> the Git editor
+```
+### Reflog references
+- Mặc định, git reflog sẽ xuất ra nhật ký của tham chiếu HEAD (con trỏ tượng trưng cho nhánh đang hoạt động hiện tại). Tuy nhiên, reflog cũng có sẵn cho các tham chiếu dữ liệu khác. Cú pháp chuẩn để truy cập vào một Git ref log là: name@{qualifier} (tên_tham_chiếu@{bộ_định_dịnh}). Ngoài HEAD, bạn có thể kiểm tra nhật ký của các nhánh khác, các tag, các remote server, và cả git stash.
+
+1. Xem nhật ký của tất cả các tham chiếu cùng lúc
+```
+git reflog show --all
+```
+1. Xem nhật ký của một nhánh cụ thể
+Bạn chỉ cần truyền tên nhánh đó vào sau lệnh git reflog show:
+```
+git reflog show otherbranch
+```
+Kết quả trả về sẽ hiển thị riêng lịch sử của nhánh đó:
+```
+9a4491f otherbranch@{0}: commit: seperate articles into branch PRs
+435aee4a otherbranch@{1}: commit (initial): initial commit add git-init and setting-up-a-repo docs
+```
+1. Xem nhật ký của bộ nhớ tạm Git Stash
+Giả sử trước đó bạn đã cất giấu một số đoạn code đang gõ dở bằng lệnh git stash, bạn có thể tra cứu lại bằng lệnh:
+```
+git reflog stash
+```
+Kết quả hiển thị:  
+```
+30d44de3 stash@{0}: WIP on git_reflog: c492574 flesh out intro
+```
+Các con trỏ tham chiếu reflog này (stash@{0}, otherbranch@{0}) hoàn toàn có thể được truyền vào làm đối số cho các câu lệnh Git khác. Ví dụ, bạn có thể so sánh sự sai lệch giữa đoạn code đang cất trong stash với ngọn của nhánh otherbranch bằng lệnh:
+
+```
+git diff stash@{0} otherbranch@{0}
+```
+### Timed reflogs
+Mỗi dòng nhật ký trong reflog đều được đính kèm ngầm một mốc thời gian (timestamp). Những mốc thời gian này có thể được tận dụng làm bộ định danh (qualifier) trong cú pháp con trỏ Git, giúp bạn lọc nhật ký theo thời gian. Dưới đây là các từ khóa thời gian được Git hỗ trợ:
+```
+1.minute.ago (1 phút trước)
+
+1.hour.ago (1 giờ trước)
+
+1.day.ago (1 ngày trước)
+
+yesterday (ngày hôm qua)
+
+1.week.ago (1 tuần trước)
+
+1.month.ago (1 tháng trước)
+
+1.year.ago (1 năm trước)
+
+2011-05-17.09:00:00 (Mốc ngày giờ chính xác)
+```
+Các từ khóa thời gian có thể được kết hợp linh hoạt (ví dụ: 1.day.2.hours.ago) và chấp nhận cả danh từ số nhiều (ví dụ: 5.minutes.ago). Bạn có thể truyền các con trỏ thời gian này vào các câu lệnh khác như git diff để kiểm tra biến động của dự án:
+```
+git diff main@{0} main@{1.day.ago}
+```
+**Ứng dụng:** Lệnh này giúp bạn so sánh file code của nhánh main ở thời điểm hiện tại (main@{0}) với chính nó của 1 ngày trước (main@{1.day.ago}). Cực kỳ hữu ích để rà soát xem trong vòng 24 giờ qua dự án đã thay đổi những gì.
+
+### Subcommands & configuration options
+Lệnh git reflog tiếp nhận một số đối số bổ sung đóng vai trò là các lệnh phụ (subcommands):
+**1. Show - git reflog show**  
+Đây là lệnh phụ mặc định được hệ thống tự hiểu ngầm. Định dạng git reflog show <refid> thực chất là một tên gọi khác (alias) của chuỗi lệnh phức tạp: git log -g --abbrev-commit --pretty=oneline.
+
+**2. Expire - git reflog expire**  
+Lệnh phụ này dùng để dọn dẹp, xóa bỏ các dòng nhật ký reflog đã quá cũ hoặc không thể liên kết tới đâu nữa nhằm tiết kiệm dung lượng ổ cứng. Lệnh này tiềm ẩn nguy cơ mất dữ liệu và thường chỉ được Git tự chạy ngầm bên trong hệ thống chứ lập trình viên ít khi phải gõ thủ công.
+- Mặc định, hạn sử dụng của một dòng reflog là 90 ngày. Bạn có thể ép thời gian hết hạn bằng tham số --expire=time hoặc cấu hình thuộc tính hệ thống gc.reflogExpire. Bạn có thể gõ git reflog expire --dry-run để chạy thử xem Git dự định xóa những dòng nhật ký nào.
+
+**3. Delete - git reflog delete**
+Lệnh này dùng để xóa đích danh một dòng nhật ký reflog cụ thể nào đó. Tương tự như expire, lệnh này ít khi được người dùng cuối kích hoạt trừ các trường hợp đặc biệt.
+
+### Recovering lost commits
+Về bản chất, Git không bao giờ thực sự làm mất bất kỳ thứ gì, ngay cả khi bạn thực hiện các thao tác viết lại lịch sử mang tính chất phá hủy như git rebase hay git commit --amend. Hãy cùng đi qua một kịch bản thực tế để xem cách Reflog cứu lại các commit bị biến mất sau khi gộp nhánh:
+
+Lịch sử ban đầu của file git log --pretty=oneline đang rất sạch đẹp:
+```
+338fbcb41de10f7f2e54095f5649426cb4bf2458 extended content
+1e63ceab309da94256db8fb1f35b1678fb74abd4 bunch of content
+c49257493a95185997c87e0bc3a9481715270086 flesh out intro
+eff544f986d270d7f97c77618314a06f024c7916 migrate existing content
+bf871fd762d8ef2e146d7f0226e81a92f91975ad Add Git Reflog outline
+35aee4a4404c42128bee8468a9517418ed0eb3dc initial commit
+```
+Sau đó, bạn gõ thêm một commit chứa các đoạn code đang làm dở:
+```
+git commit -am "some WIP changes"
+```
+Lúc này lịch sử log được nối dài thêm dòng: 37656e1... some WIP changes đứng ở trên cùng.
+Ngay sau đó, bạn thực hiện một cú Rebase tương tác với nhánh chính để nén gọn lịch sử trước khi nộp bài:
+```
+git rebase -i origin/main
+```
+Trong quá trình rebase, bạn sử dụng lệnh squash (s) để gộp hàng loạt các commit nhỏ phía dưới vào chung với commit some WIP changes gần nhất. Sau khi rebase hoàn tất, bạn gõ git log kiểm tra lại:
+```
+40dhsoi37656e19d4e4f1a9b419f57850ch87dah987698hs some WIP changes
+35aee4a4404c42128bee8468a9517418ed0eb3dc initial commit
+```
+Nhìn vào log, toàn bộ các commit nhỏ trung gian đã bị nén biến mất khỏi màn hình, chỉ còn lại duy nhất commit gộp chung. Chuyện gì xảy ra nếu lúc này bạn hối hận và muốn lấy lại một cú commit nhỏ đã bị squash trước đó để bóc tách lại code? git log đã bất lực. Đây chính là lúc bạn gọi đến cứu viện git reflog:
+```
+$ git reflog
+37656e1 HEAD@{0}: rebase -i (finish): returning to refs/heads/git_reflog
+37656e1 HEAD@{1}: rebase -i (start): checkout origin/main
+37656e1 HEAD@{2}: commit: some WIP changes
+``` 
+
+Nhìn vào bảng reflog, bạn thấy rõ lịch sử chuyển động: dòng HEAD@{0} và HEAD@{1} ghi lại thời điểm bắt đầu và kết thúc vụ tai nạn rebase. Quan trọng nhất, dòng HEAD@{2} chính là trạng thái nguyên bản an toàn của bạn ngay trước khi lệnh rebase diễn ra.
+
+Bạn tiến hành khôi phục lại toàn bộ các commit đã mất bằng lệnh giật lùi reset:
+
+```
+git reset --hard HEAD@{2}
+```
+Ngay sau lệnh này, con trỏ HEAD lập tức được kéo về mốc HEAD@{2}, cứu sống toàn bộ các commit đã bị nén oan uổng, trả lại đầy đủ lịch sử ban đầu cho bạn.
+
+## Git remote
+Hệ thống quản lý phiên bản Subversion (SVN) sử dụng một kho chứa trung tâm duy nhất đóng vai trò là trung tâm kết nối cho các lập trình viên. Việc cộng tác diễn ra bằng cách truyền các tập hợp thay đổi (changesets) qua lại giữa bản sao làm việc của lập trình viên và kho chứa trung tâm đó. Mô hình này khác biệt hoàn toàn với mô hình cộng tác phân tán (distributed collaboration model) của Git.
+
+Trong Git, mỗi lập trình viên có một bản sao độc lập hoàn chỉnh của kho chứa, đi kèm với lịch sử commit cục bộ và cấu trúc nhánh riêng. Người dùng thường có nhu cầu chia sẻ một chuỗi các commit thay vì một changeset đơn lẻ. Thay vì commit một changeset từ bản sao làm việc lên máy chủ trung tâm, Git cho phép bạn chia sẻ toàn bộ các nhánh giữa các kho chứa với nhau.
+
+Lệnh git remote là một mảnh ghép nằm trong một hệ thống lớn chịu trách nhiệm đồng bộ hóa các thay đổi. Các bản ghi được đăng ký thông qua lệnh git remote sẽ được sử dụng kết hợp với các lệnh git fetch, git push, và git pull.
+
+### Git remote là gì?
+Lệnh git remote cho phép bạn tạo, xem và xóa các kết nối tới các kho chứa khác. Các kết nối từ xa (remote connections) này hoạt động giống như các "dấu trang" (bookmarks) hơn là các liên kết trực tiếp vào kho chứa khác. Thay vì cung cấp quyền truy cập thời gian thực vào một kho chứa, chúng phục vụ như những cái tên gợi nhớ tiện lợi để thay thế cho một đường dẫn URL dài dòng, khó nhớ.
+
+### Git remote usage overview (Tổng quan cách sử dụng)
+Lệnh git remote về mặt bản chất là một giao diện quản lý danh sách các cấu hình từ xa được lưu trữ ngầm bên trong file văn bản ./.git/config của dự án. Các câu lệnh dưới đây được sử dụng để kiểm tra trạng thái hiện tại của danh sách remote này:
+
+#### Viewing git remote configurations
+- git remote: Liệt kê tên các kết nối từ xa mà bạn đang có với các kho chứa khác.
+
+- git remote -v: Tương tự như lệnh trên, nhưng hiển thị kèm theo cả đường dẫn URL chi tiết của từng kết nối.
+
+#### Creating and modifying git remote configurations
+Lệnh git remote đóng vai trò là một phương thức "trợ giúp" tiện lợi để sửa đổi file ./.git/config. Các kết quả của những lệnh dưới đây hoàn toàn có thể đạt được bằng cách dùng trình soạn thảo văn bản mở trực tiếp file ./.git/config ra để sửa:
+
+- git remote add <name> <url>: Khởi tạo một kết nối mới tới một kho chứa từ xa. Sau khi add thành công, bạn có thể dùng tên <name> làm phím tắt cho <url> trong các lệnh khác.
+- git remote rm <name>: Xóa bỏ hoàn toàn kết nối tới kho chứa từ xa có tên là <name>.
+- git remote rename <old-name> <new-name>: Đổi tên một kết nối từ xa từ tên cũ <old-name> thành tên mới <new-name>.
+
+#### Git remote discussion
+Git được thiết kế để cung cấp cho mỗi lập trình viên một môi trường phát triển biệt lập hoàn toàn. Điều này đồng nghĩa với việc thông tin dữ liệu không tự động truyền qua lại giữa các kho chứa. Thay vào đó, các lập trình viên cần phải tự tay kéo các commit thượng nguồn về máy (pull) hoặc tự tay đẩy các commit cục bộ của mình lên mạng (push). Lệnh git remote đơn giản chỉ là một cách dễ dàng hơn để bạn truyền các đường dẫn URL vào các lệnh chia sẻ dữ liệu này.
+
+#### Remote mặc định: origin
+Khi bạn tải một dự án về bằng lệnh git clone, Git sẽ tự động tạo ngầm một kết nối từ xa đặt tên là origin trỏ ngược về kho chứa gốc mà bạn vừa clone. Điều này cực kỳ tiện lợi cho các lập trình viên khi cần cập nhật code mới hoặc xuất bản sản phẩm lên server. Đây cũng là lý do vì sao hầu hết các dự án Git trên thế giới đều quy ước gọi kho chứa trung tâm của họ là origin.
+
+#### Đường dẫn URL của kho chứa (Repository URLs)
+Git hỗ trợ nhiều giao thức để tham chiếu tới một kho chứa từ xa. Hai giao thức phổ biến nhất là HTTP và SSH:
+- HTTP (hoặc HTTPS): Phù hợp cho việc cấp quyền truy cập ẩn danh, chỉ đọc (read-only). Ví dụ: http://host/path/to/repo.git. Thông thường bạn không thể push code qua địa chỉ HTTP ẩn danh này (chẳng ai muốn cho người lạ đẩy code lung tung vào dự án của mình cả).
+- SSH: Phù hợp cho quyền đọc-ghi (read-write) có xác thực bảo mật: ssh://user@host/path/to/repo.git. Bạn sẽ cần một tài khoản SSH hợp lệ trên máy chủ. Các nền tảng hiện đại như GitHub hay Bitbucket luôn cung cấp sẵn cả 2 đường dẫn này trên giao diện để bạn copy.
+
+### Git remote subcommands
+**1. ADD <NAME> <URL>**  
+Ghi một dòng cấu hình vào ./.git/config.
+- Có thể thêm tham số -f: Git sẽ tự động chạy lệnh git fetch <name> ngay lập tức sau khi kết nối được tạo để tải dữ liệu về.
+
+- Có thể thêm tham số --tags: Tự động fetch và tải toàn bộ các nhãn tag từ kho chứa từ xa về máy local.
+
+**2. RENAME <OLD> <NEW>**  
+Cập nhật file cấu hình để đổi tên remote. Tất cả các nhánh theo dõi từ xa (remote-tracking branches) và các cài đặt cấu hình cho remote đó đều sẽ được cập nhật đồng bộ theo tên mới.
+
+**3. REMOVE hoặc RM <NAME>**  
+Xóa bỏ bản ghi remote khỏi file config. Toàn bộ các nhánh theo dõi từ xa thuộc về remote này cũng sẽ bị xóa sạch khỏi máy local.
+
+**4. GET-URL <NAME>**  
+In ra màn hình đường dẫn URL của remote.
+
+- Thêm --push: Hiển thị URL phục vụ cho việc đẩy code (push URL) thay vì URL tải code (fetch URL).
+
+- Thêm --all: Hiển thị toàn bộ các URL đang gắn với remote đó.
+**5. SHOW <NAME>**
+Xuất ra màn hình một bảng báo cáo thông tin cấp cao chi tiết về remote <NAME>.
+**6. PRUNE <NAME> (Dọn dẹp nhánh rác)**
+Xóa bỏ toàn bộ các nhánh local đại diện cho remote <NAME> mà thực tế trên server từ xa các nhánh đó đã bị người khác xóa mất rồi.
+
+- Thêm --dry-run: Chạy thử xem những nhánh nào nằm trong diện bị dọn dẹp chứ chưa xóa thật.
+
+### Git remote examples
+Bên cạnh origin, đôi khi sẽ rất tiện lợi nếu bạn tạo thêm kết nối tới kho chứa của các đồng nghiệp khác để lấy code trực tiếp từ máy của họ. Ví dụ, nếu người bạn làm chung tên là John có một kho chứa công khai tại địa chỉ dev.example.com/john.git, bạn có thể add kết nối như sau:
+```
+git remote add john http://dev.example.com/john.git
+```
+Việc kết nối trực tiếp này giúp hai người có thể trao đổi, duyệt code cho nhau mà không cần phải đi đường vòng thông qua máy chủ trung tâm. Cực kỳ hữu ích cho các nhóm nhỏ đang cùng xử lý một tính năng phức tạp.
+
+**1. Kiểm tra danh sách Remote hiện có**
+Lệnh mặc định chỉ hiện tên viết tắt:
+```
+$ git remote
+origin
+upstream
+other_users_repo
+```
+Nếu muốn xem chi tiết cả URL (Verbose mode), hãy thêm -v:
+```
+$ git remote -v
+origin  git@bitbucket.com:origin_user/reponame.git (fetch)
+origin  git@bitbucket.com:origin_user/reponame.git (push)
+upstream    https://bitbucket.com/upstream_user/reponame.git (fetch)
+upstream    https://bitbucket.com/upstream_user/reponame.git (push)
+other_users_repo    https://bitbucket.com/other_users_repo/reponame (fetch)
+other_users_repo    https://bitbucket.com/other_users_repo/reponame (push)
+```
+(Cột cuối cùng chỉ rõ đường link nào được dùng để nạp code về fetch, đường link nào dùng để xuất code lên push).
+
+**2. Thao tác Add Remote ngầm kiểm tra file config**
+Khi bạn gõ lệnh thêm một remote tên là fake_test:
+```
+$ git remote add fake_test https://bitbucket.com/upstream_user/reponame.git
+```
+Mở file ẩn ./.git/config ra, bạn sẽ thấy Git tự động viết thêm đoạn text sau vào cuối file:
+```
+[remote "fake_test"]
+   url = https://bitbucket.com/upstream_user/reponame.git
+   fetch = +refs/heads/*:refs/remotes/fake_test/*
+```
+**3. Soi chi tiết một Remote bằng lệnh Show**
+Lệnh này giúp bạn xem tình trạng đồng bộ các nhánh giữa máy mình và server:
+```
+$ git remote show upstream
+* remote upstream
+   Fetch URL: https://bitbucket.com/upstream_user/reponame.git
+   Push URL: https://bitbucket.com/upstream_user/reponame.git
+   HEAD branch: main
+   Remote branches:
+      main tracked
+      simd-deprecated tracked
+      tutorial tracked
+   Local ref configured for 'git push':
+      main pushes to main (fast-forwardable)
+```
+**4. Đẩy code và Xóa bỏ Remote**
+- Để tải dữ liệu từ một remote về, bạn truyền tên remote đó vào lệnh git fetch <remote-name> hoặc git pull.
+
+- Để đẩy tính năng lên mạng, bạn dùng lệnh git push:
+```
+git push origin feature_branch
+```
+Lệnh này tải trạng thái cục bộ của nhánh feature_branch lên kho chứa từ xa origin.
+- Để gỡ bỏ một kết nối remote đã add nhầm (ví dụ xóa remote fake_test vừa tạo ở trên):
+```
+git remote rm fake_test
+```
+Sau khi chạy xong, bản ghi của fake_test trong file ./.git/config lập tức bị xóa sạch không còn dấu vết.
+
+## Git fetch
+Lệnh git fetch thực hiện tải về các commit, file và các tham chiếu (refs) từ một kho chứa từ xa (remote repository) vào kho chứa cục bộ (local repo) của bạn. Fetching là hành động bạn thực hiện khi muốn kiểm tra xem mọi người xung quanh đang làm việc tới đâu. Lệnh này tương tự như svn update ở chỗ nó cho phép bạn thấy lịch sử trung tâm đã tiến triển như thế nào, nhưng nó không ép buộc bạn phải thực sự gộp (merge) những thay đổi đó vào kho chứa của mình.
+
+Git cô lập hoàn toàn nội dung vừa fetch về khỏi nội dung cục bộ hiện tại; nó tuyệt đối không gây ra bất kỳ ảnh hưởng nào tới công việc phát triển cục bộ của bạn. Nội dung được fetch về bắt buộc phải được chuyển đổi một cách tường minh bằng lệnh git checkout. Điều này biến fetch trở thành một phương thức an toàn bậc nhất để xem xét, duyệt các commit trước khi tích hợp chúng vào kho chứa cục bộ.
+
+Khi muốn tải nội dung từ một remote repo, bạn có hai công cụ là git pull và git fetch. Bạn có thể coi git fetch là phiên bản "an toàn" của hai lệnh này. Nó sẽ tải nội dung từ xa về nhưng không cập nhật trạng thái làm việc cục bộ của bạn, giữ nguyên vẹn công việc hiện tại.
+
+Khi muốn tải nội dung từ một remote repo, bạn có hai công cụ là git pull và git fetch. Bạn có thể coi git fetch là phiên bản "an toàn" của hai lệnh này. Nó sẽ tải nội dung từ xa về nhưng không cập nhật trạng thái làm việc cục bộ của bạn, giữ nguyên vẹn công việc hiện tại.
+
+Ngược lại, git pull là một giải pháp thay thế quyết liệt hơn; nó sẽ tải nội dung từ xa về cho nhánh cục bộ đang hoạt động và ngay lập tức thực thi git merge để tạo ra một commit gộp cho nội dung từ xa mới đó. Nếu bạn đang có những thay đổi dở dang chưa hoàn thành, hành động này sẽ gây ra xung đột (conflicts) và kích hoạt quy trình giải quyết xung đột gộp nhánh đầy phiền toái.
+
+### How git fetch works with remote branches
+Để hiểu rõ hơn cách hoạt động của git fetch, hãy cùng thảo luận về cách Git tổ chức và lưu trữ các commit. Phía sau hậu trường, trong thư mục ./.git/objects của kho chứa, Git lưu trữ toàn bộ các commit, bao gồm cả cục bộ và từ xa. Git giữ cho các commit của nhánh cục bộ và nhánh từ xa tách biệt rõ ràng với nhau thông qua việc sử dụng các tham chiếu nhánh (branch refs).
+
+Các tham chiếu cho nhánh cục bộ được lưu trữ tại ./.git/refs/heads/. Thực thi lệnh git branch thông thường sẽ in ra danh sách các tham chiếu nhánh cục bộ này. Dưới đây là một ví dụ về đầu ra của lệnh git branch với vài tên nhánh thử nghiệm:
+```
+git branch
+  main
+  feature1
+  debug2
+```
+Kiểm tra nội dung của thư mục ./.git/refs/heads/ cũng sẽ tiết lộ kết quả tương tự:
+```
+ls ./.git/refs/heads/
+  main
+  feature1
+  debug2
+```
+Các nhánh từ xa (remote branches) hoàn toàn giống như các nhánh cục bộ, ngoại trừ việc chúng ánh xạ tới các commit từ kho chứa của một người khác. Các nhánh từ xa luôn được gắn tiền tố (prefix) bởi tên của chính remote sở hữu chúng để bạn không bị nhầm lẫn với nhánh cục bộ. Giống như nhánh local, Git cũng có các tham chiếu riêng cho nhánh remote. Các tham chiếu nhánh từ xa nằm trong thư mục ./.git/refs/remotes/.
+
+Đoạn mã ví dụ tiếp theo hiển thị các nhánh bạn có thể nhìn thấy sau khi fetch một remote repo được đặt tên là remote-repo:
+```
+$ git branch -r
+# origin/main
+# origin/feature1
+# origin/debug2
+# remote-repo/main
+# remote-repo/other-feature
+```
+Kết quả này hiển thị lại các nhánh cục bộ chúng ta đã xem xét trước đó nhưng giờ đây được gắn thêm tiền tố origin/. Thêm vào đó, chúng ta thấy các nhánh từ xa mới xuất hiện với tiền tố remote-repo/. Bạn có thể checkout một nhánh từ xa y hệt như nhánh cục bộ, nhưng hành động này sẽ đưa bạn vào trạng thái Detached HEAD (giống như khi checkout về một commit cũ). Bạn có thể tạm coi chúng là các nhánh chỉ đọc (read-only branches). Để xem các nhánh từ xa, bạn chỉ cần truyền thêm tham số -r vào lệnh git branch.
+
+Bạn có thể thanh tra các nhánh từ xa bằng các lệnh quen thuộc như git checkout và git log. Nếu bạn chấp thuận những thay đổi mà nhánh từ xa đó nắm giữ, bạn có thể gộp nó vào một nhánh cục bộ bằng một lệnh git merge thông thường. Vì vậy, khác với SVN, việc đồng bộ hóa kho chứa cục bộ của bạn với một kho chứa từ xa thực chất là một quy trình gồm hai bước tách biệt: fetch trước, rồi merge sau. Lệnh git pull đơn thuần chỉ là một phím tắt tiện lợi kết hợp quy trình này lại làm một.
+
+### Git fetch commands and options
+- git fetch <remote>: Tải về toàn bộ các nhánh từ một kho chứa chỉ định. Thao tác này cũng đồng thời tải xuống tất cả các commit và file cần thiết từ kho chứa đó.
+
+- git fetch <remote> <branch>: Tương tự như lệnh trên, nhưng thu hẹp phạm vi, chỉ tải về duy nhất một nhánh được chỉ định cụ thể.
+
+- git fetch --all: Một bước đi giúp tải về toàn bộ các nhánh dữ liệu từ tất cả các remote mà bạn đã đăng ký kết nối trong cấu hình.
+
+- git fetch --dry-run: Thực hiện một cú chạy mô phỏng . Git sẽ in ra màn hình các hành động và các nhánh mà nó sẽ tác động trong quá trình fetch chứ chưa thực sự tải dữ liệu thật về máy.
+
+### Git fetch examples
+**Kịch bản 1: Fetch một nhánh từ xa của đồng nghiệp**
+Ví dụ này sẽ minh họa cách fetch một nhánh từ xa và cập nhật trạng thái làm việc cục bộ của bạn theo nội dung từ xa đó. Giả định rằng chúng ta có một repo trung tâm tên là origin (nơi kho chứa cục bộ được clone về). Hãy giả định thêm một kho chứa từ xa thứ hai tên là coworkers_repo chứa nhánh tính năng feature_branch mà chúng ta cần cấu hình và fetch về máy.
+
+Đầu tiên, chúng ta cần cấu hình kết nối remote bằng lệnh git remote:
+```
+git remote add coworkers_repo git@bitbucket.org:coworker/coworkers_repo.git
+```
+Bây giờ, chúng ta truyền tên remote đó vào lệnh git fetch để tải nội dung về:
+```
+$ git fetch coworkers_repo coworkers/feature_branch
+fetching coworkers_repo/feature_branch
+```
+Hiện tại chúng ta đã có nội dung của nhánh từ xa lưu trữ một cách biệt lập ở máy local, chúng ta cần tích hợp nội dung này vào bản sao làm việc của mình. Hãy bắt đầu bằng cách dùng git checkout để nhảy tới xem nhánh từ xa vừa tải về:
+```
+$ git checkout coworkers_repo/feature_branch
+Note: checking out coworkers_repo/feature_branch'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by performing another checkout.
+```
+Đầu ra của lệnh checkout báo hiệu bạn đang ở trạng thái Detached HEAD. Điều này hoàn toàn bình thường, có nghĩa là con trỏ HEAD đang trỏ vào một tham chiếu nằm ngoài chuỗi lịch sử cục bộ của bạn. Để có thể thoải mái viết code tiếp trên nền tảng nhánh này một cách an toàn mà không sợ bị dọn rác mất dữ liệu, chúng ta tạo một nhánh cục bộ mới từ mốc này:
+```
+git checkout -b local_feature_branch
+```
+Lệnh này tạo ra nhánh cục bộ local_feature_branch, cập nhật con trỏ HEAD bám vào nó và bạn có thể tự do phát triển tiếp từ thời điểm này.
+**Kịch bản 2: Đồng bộ hóa nhánh Main với máy chủ trung tâm**
+Ví dụ này đi qua một quy trình làm việc kinh điển hàng ngày để đồng bộ hóa kho chứa local của bạn với nhánh chính main của repo trung tâm.
+```
+git fetch origin
+```
+Màn hình hiển thị danh sách các nhánh được tải về:
+```
+a1e8fb5..45e66a4 main -> origin/main
+a1e8fb5..9e8ab1c develop -> origin/develop
+* [new branch] some-feature -> origin/some-feature
+```
+Để xem những commit nào đã được mọi người thêm vào nhánh main ở trên mạng (upstream main), bạn có thể chạy lệnh git log và sử dụng con trỏ từ xa origin/main làm bộ lọc:
+```
+git log --oneline main..origin/main
+```
+(Lệnh này chỉ lọc và hiển thị ra những commit nào có ở trên server origin/main nhưng chưa xuất hiện dưới máy main của bạn).  
+Sau khi xem xét, nếu bạn phê duyệt các thay đổi này và muốn gộp chúng vào nhánh main cục bộ của mình, hãy thực thi chuỗi lệnh sau:
+```
+# 1. Chuyển về nhánh main của mình
+git checkout main
+
+# 2. Tiến hành gộp nhánh từ xa vào nhánh mình
+git merge origin/main
+```
+Kết quả là hai nhánh origin/main (ở trên mạng) và nhánh main (dưới máy bạn) giờ đây cùng trỏ vào một commit chung duy nhất, và hệ thống của bạn đã được đồng bộ hóa hoàn toàn với tiến độ phát triển của thượng nguồn.
+
+## Git push
+Lệnh git push được sử dụng để tải nội dung từ kho chứa cục bộ (local repository) lên một kho chứa từ xa (remote repository). Đẩy dữ liệu (Pushing) chính là cách bạn chuyển các commit từ kho chứa local sang một remote repo. Nó là bản sao đối nghịch của lệnh git fetch; nhưng trong khi fetch nhập (imports) các commit vào các nhánh cục bộ, thì push lại xuất (exports) các commit ra các nhánh từ xa. Các nhánh từ xa được cấu hình bằng lệnh git remote. Hành động push có khả năng ghi đè lên các thay đổi, vì vậy bạn cần phải hết sức cẩn trọng khi thực hiện.
+
+### Git push usage
+- git push <remote> <branch>: Đẩy nhánh được chỉ định lên <remote>, cùng với tất cả các commit và các đối tượng nội bộ cần thiết. Hành động này sẽ tạo ra một nhánh cục bộ tương ứng trong kho chứa đích. Để ngăn bạn ghi đè lên các commit của người khác, Git sẽ không cho phép bạn push nếu nó dẫn đến một cú gộp nhánh không-phải-tiến-thẳng (non-fast-forward merge) tại kho chứa đích.
+
+- git push <remote> --force: Tương tự như lệnh trên, nhưng ép buộc (force) đẩy dữ liệu lên bất kể nó có gây ra một cú gộp non-fast-forward hay không. Tuyệt đối không sử dụng tham số --force trừ khi bạn hoàn toàn chắc chắn mình đang làm gì.
+
+- git push <remote> --all: Đẩy toàn bộ các nhánh cục bộ của bạn lên remote được chỉ định
+
+-git push <remote> --tags: Các nhãn (tags) sẽ không tự động được đẩy lên khi bạn push một nhánh thông thường hoặc khi dùng tùy chọn --all. Tham số --tags sẽ gửi tất cả các nhãn tag cục bộ của bạn lên kho chứa từ xa.
+
+### Git push discussion
+Lệnh git push thường được sử dụng phổ biến nhất để xuất bản và tải các thay đổi cục bộ lên một kho chứa trung tâm. Sau khi kho chứa local được sửa đổi, một lệnh push sẽ được thực thi để chia sẻ các sửa đổi đó với các thành viên khác trong đội nhóm.
+
+Sơ đồ trên hiển thị những gì xảy ra khi nhánh main cục bộ của bạn đã tiến xa hơn nhánh main của kho chứa trung tâm, và bạn xuất bản các thay đổi bằng cách chạy lệnh git push origin main. Hãy lưu ý rằng về mặt bản chất, lệnh git push hoạt động hoàn toàn tương tự như việc chạy lệnh git merge main từ bên trong kho chứa từ xa.
+
+### Syncing
+git push là một thành phần trong số nhiều công cụ được sử dụng cho toàn bộ quy trình "đồng bộ hóa" (syncing) của Git. Các lệnh đồng bộ hoạt động trên các nhánh từ xa vốn được cấu hình bằng lệnh git remote. Bạn có thể coi git push là lệnh "tải lên" (upload), trong khi git fetch và git pull có thể được hiểu là các lệnh "tải về" (download). Một khi các tập hợp thay đổi (changesets) đã được di chuyển thông qua hành động tải về hoặc tải lên, một lệnh git merge có thể được thực hiện tại điểm đích để tích hợp các thay đổi đó vào code chung.
+
+### Pushing to bare repositories
+Một thói quen sử dụng Git hiện đại và thường xuyên được áp dụng là cấu hình một kho chứa từ xa được khởi tạo với tham số --bare để làm kho chứa trung tâm (origin). Kho chứa origin này thường được lưu trữ trực tuyến thông qua một bên thứ ba đáng tin cậy như Bitbucket hay GitHub. Vì hành động push sẽ can thiệp trực tiếp vào cấu trúc nhánh của hệ thống từ xa, nên việc push vào các kho chứa được tạo với cờ --bare là an toàn nhất và phổ biến nhất.
+
+Các kho chứa Bare repos không có thư mục làm việc (working directory), do đó một cú push từ máy bạn lên sẽ không làm xáo trộn hay ảnh hưởng đến bất kỳ nội dung nào đang được gõ dở ở thư mục làm việc trên server.
+
+### Force pushing
+- Git ngăn chặn bạn ghi đè lên lịch sử của kho chứa trung tâm bằng cách từ chối các yêu cầu push khi chúng dẫn đến một cú gộp nhánh non-fast-forward. Do đó, nếu lịch sử trên remote đã bị rẽ hướng (diverged) so với lịch sử dưới máy bạn, bạn bắt buộc phải kéo nhánh từ xa đó về (pull), gộp nó vào nhánh cục bộ của mình, rồi sau đó mới thử push lại. Quy trình này tương tự như cách SVN bắt bạn phải đồng bộ với kho chứa trung tâm qua lệnh svn update trước khi được phép commit một changeset.
+
+- Tham số --force sẽ ghi đè và phá vỡ cơ chế bảo vệ này, nó ép buộc nhánh của kho chứa từ xa phải thay đổi để khớp chính xác với nhánh cục bộ dưới máy bạn, đồng thời XÓA BỎ hoàn toàn bất kỳ thay đổi thượng nguồn (upstream changes) nào đã được người khác push lên kể từ lần cuối cùng bạn pull code.
+
+- Trường hợp duy nhất nên dùng Force Push: Đó là khi bạn nhận ra các commit mình vừa push lên mạng bị sai sót nhẹ và bạn đã tự sửa lại chúng dưới máy local bằng lệnh git commit --amend hoặc chạy một cú git rebase tương tác. Tuy nhiên, trước khi gõ --force, bạn phải hoàn toàn chắc chắn rằng chưa có bất kỳ đồng nghiệp nào trong đội kịp kéo (pull) những commit lỗi trước đó của bạn về máy của họ.
+
+### Examples
+1. Default git push
+
+Ví dụ dưới đây mô tả một trong những phương pháp chuẩn mực nhất để xuất bản các đóng góp cục bộ lên kho chứa trung tâm.
+
+Đầu tiên, nó đảm bảo nhánh main cục bộ của bạn đã được cập nhật mới nhất bằng cách fetch bản sao của kho chứa trung tâm về, sau đó rebase các thay đổi của bạn lên trên ngọn của chúng. Việc rebase tương tác cũng là một cơ hội tuyệt vời để dọn dẹp, trau chuốt lại các commit trước khi chia sẻ. Cuối cùng, lệnh git push sẽ gửi toàn bộ các commit an toàn từ máy bạn lên server.
+
+```
+# 1. Chuyển về nhánh main của bạn
+git checkout main
+
+# 2. Tải toàn bộ dữ liệu mới nhất trên server về
+git fetch origin main
+
+# 3. Chạy rebase tương tác để nén gọn, dọn sạch lịch sử code local của bạn
+git rebase -i origin/main
+# (Tại đây bạn có thể Squash commit, sửa lại commit message cho chuẩn chỉ...)
+
+# 4. Chính thức push lên mạng
+git push origin main
+```
+
+Vì chúng ta đã chủ động bảo đảm nhánh main local được cập nhật đồng bộ hoàn toàn với server từ trước, hành động gộp nhánh lúc này sẽ là một cú gộp tiến thẳng (fast-forward merge), và git push sẽ chạy mượt mà mà không hề đưa ra bất kỳ lời phàn nàn hay cảnh báo chặn lỗi nào.
+
+2. Amended force push
+Lệnh git commit chấp nhận tùy chọn --amend để cập nhật lại cú commit ngay trước đó (sửa chính tả lời nhắn hoặc thêm file thiếu). Một khi commit đã bị amend, mã SHA của nó bị đổi và một cú git push thông thường sẽ bị thất bại ngay lập tức vì Git nhận diện nội dung giữa máy bạn và remote đã bị lệch pha rẽ hướng. Bạn bắt buộc phải dùng tham số --force để đẩy commit đã amend này lên:
+```
+# Sửa đổi file trong repo và add vào hàng chờ
+git add .
+
+# Sửa đổi nội dung hoặc lời nhắn của chính cú commit vừa tạo
+git commit --amend
+
+# Ép buộc push lên server để ghi đè commit cũ bằng commit mới tinh này
+git push --force origin main
+```
+
+3. Xóa một nhánh hoặc một Tag trên Server từ xa  
+
+Đôi khi các nhánh cần phải được dọn dẹp sạch sẽ để phục vụ cho mục đích quản lý tổ chức ngăn nắp. Để xóa hoàn toàn một nhánh, bạn phải xóa nó ở cả dưới máy local lẫn trên remote server.
+
+- Xóa nhánh dưới máy local:
+```
+git branch -D tên_nhánh
+```
+- Xóa nhánh trên Remote Server từ xa:
+```
+git push origin :tên_nhánh
+```
+Cơ chế ngầm: Việc truyền một tên nhánh có gắn dấu hai chấm : ở ngay phía trước vào lệnh git push chính là cách bạn ra lệnh cho Git phải xóa bỏ cái nhánh đó trên remote server origin.
+
+## Git pull
+- Lệnh git pull được sử dụng để truy xuất, tải về nội dung từ một kho chứa từ xa (remote repository) và ngay lập tức cập nhật kho chứa cục bộ (local repository) để khớp với nội dung đó. Việc gộp các thay đổi từ thượng nguồn (remote upstream changes) vào kho chứa local của bạn là một công việc cực kỳ quen thuộc trong quy trình làm việc nhóm phối hợp của Git.
+
+Về bản chất, lệnh git pull là sự kết hợp của hai câu lệnh khác: git fetch chạy trước, theo sau đó là git merge.
+1. Trong giai đoạn hoạt động đầu tiên, git pull sẽ thực thi một lệnh git fetch có phạm vi thu hẹp trong chính nhánh cục bộ mà con trỏ HEAD đang trỏ vào.
+
+1. Một khi nội dung đã được tải xuống hoàn tất, git pull sẽ lập tức bước vào quy trình gộp nhánh (merge workflow). Một commit gộp (merge commit) mới sẽ được khởi tạo và con trỏ HEAD được cập nhật để trỏ vào commit mới đó.
+
+### How it works
+
+### Cách hoạt động của `git pull`
+
+Lệnh `git pull` dùng để lấy các thay đổi mới nhất từ **remote repository** về máy **local** và gộp vào nhánh hiện tại.
+
+Về bản chất:
+
+```bash
+git pull = git fetch + git merge
+```
+
+---
+
+#### 1. Bước 1: Git chạy `git fetch`
+
+Đầu tiên, Git sẽ tải các commit mới từ remote repository về máy local.
+
+Ví dụ remote `origin/main` có thêm các commit mới:
+
+```text
+A - B - C
+```
+
+Lúc này, Git chỉ tải dữ liệu về, chưa gộp ngay vào nhánh local.
+
+---
+
+#### 2. Bước 2: Git chạy `git merge`
+
+Sau khi tải commit mới về, Git sẽ gộp các commit đó vào nhánh local hiện tại.
+
+Giả sử nhánh local cũng có các commit riêng:
+
+```text
+E - F - G
+```
+
+Khi đó, Git sẽ merge các commit từ remote `A - B - C` với các commit local `E - F - G`.
+
+---
+
+#### 3. Bước 3: Tạo merge commit
+
+Nếu nhánh local và remote đã phát triển theo hai hướng khác nhau, Git sẽ tạo thêm một commit mới để gộp hai nhánh lại.
+
+Commit mới này gọi là **merge commit**.
+
+Ví dụ merge commit được ký hiệu là:
+
+```text
+H
+```
+
+Commit `H` chứa nội dung đã được gộp từ cả remote và local.
+
+---
+
+#### 4. Kết quả của `git pull`
+
+Khi chạy:
+
+```bash
+git pull origin main
+```
+
+Git sẽ thực hiện:
+
+```bash
+git fetch origin main
+git merge origin/main
+```
+
+Kết quả là các commit mới từ remote được đưa vào local, đồng thời Git có thể tạo thêm merge commit nếu cần.
+
+---
+
+#### 5. Dùng `git pull --rebase`
+
+Ngoài cách merge mặc định, có thể dùng:
+
+```bash
+git pull --rebase origin main
+```
+
+Lệnh này vẫn tải commit mới từ remote về, nhưng không tạo merge commit `H`.
+
+Thay vào đó, Git sẽ đưa các commit remote lên trước, sau đó đặt các commit local lên sau.
+
+Ví dụ:
+
+```text
+A - B - C - E' - F' - G'
+```
+
+Trong đó:
+
+* `A - B - C`: các commit từ remote
+* `E' - F' - G'`: phiên bản mới của các commit local
+
+---
+
+#### 6. Kết luận
+
+```text
+git pull
+= lấy commit từ remote về rồi merge vào local.
+```
+
+```text
+git pull --rebase
+= lấy commit từ remote về rồi đặt commit local lên sau commit remote.
+```
+
+Tóm lại:
+
+* `git pull` mặc định có thể tạo **merge commit**.
+* `git pull --rebase` giúp lịch sử commit gọn và thẳng hơn.
+
+### Common Options
+- git pull <remote>: Tải về bản sao của nhánh hiện tại từ remote chỉ định và ngay lập tức gộp nó vào bản sao cục bộ dưới máy. Lệnh này hoàn toàn tương đương với việc gõ git fetch <remote> rồi gõ tiếp git merge origin/<current-branch>.
+
+- git pull --no-commit <remote>: Tương tự như lệnh mặc định, nó vẫn tải nội dung từ xa về nhưng không tự động tạo ra một commit gộp mới.
+
+- git pull --rebase <remote>: Tương tự như cú pull trước đó nhưng thay vì sử dụng git merge để tích hợp nhánh từ xa với nhánh local, hệ thống sẽ sử dụng git rebase.
+
+- git pull --verbose: Chế độ hiển thị chi tiết (verbose). Git sẽ in ra toàn bộ thông tin về các file đang được tải xuống cũng như các chi tiết ngầm của quy trình gộp nhánh lên màn hình terminal.
+
+### Git pull discussion
+Bạn có thể coi git pull chính là phiên bản Git của lệnh svn update. Nó là một cách dễ dàng để đồng bộ hóa kho chứa cục bộ của bạn với các thay đổi ở thượng nguồn.
+
+Ban đầu bạn có thể nghĩ rằng kho chứa của mình đã được đồng bộ hóa hoàn toàn, nhưng sau đó lệnh git fetch tiết lộ rằng phiên bản main trên origin đã tiến xa hơn kể từ lần cuối cùng bạn kiểm tra nó. Ngay sau đó, lệnh git merge lập tức tích hợp nhánh main từ xa vào nhánh main cục bộ của bạn.
+
+### Git pull and syncing
+git pull là một thành phần trong số nhiều công cụ chịu trách nhiệm cho toàn bộ quy trình "đồng bộ hóa" (syncing) nội dung từ xa. Lệnh git remote được sử dụng để chỉ định các điểm cuối remote (remote endpoints) nào mà các lệnh đồng bộ sẽ tác động lên. Lệnh git push được sử dụng để tải nội dung lên một kho chứa từ xa.
+
+Lệnh git fetch có thể bị nhầm lẫn với git pull. Cả hai đều được sử dụng để tải nội dung từ xa về máy. Tuy nhiên, giữa chúng có một ranh giới khác biệt cực kỳ quan trọng về mức độ an toàn:
+
+- git fetch là tùy chọn "AN TOÀN": Lệnh này sẽ tải nội dung từ xa về và không làm thay đổi trạng thái của kho chứa cục bộ, giữ nguyên vẹn công việc hiện tại của bạn.
+
+- git pull là tùy chọn "KHÔNG AN TOÀN": Lệnh này vừa tải nội dung về là lập tức cố gắng thay đổi trạng thái cục bộ để khớp với nội dung từ xa đó. Điều này có thể vô tình đẩy kho chứa cục bộ của bạn rơi vào trạng thái xung đột (conflict).
+
+### Pulling via Rebase
+Tùy chọn --rebase có thể được sử dụng để đảm bảo một lịch sử tuyến tính bằng cách ngăn chặn các commit gộp không cần thiết. Rất nhiều nhà phát triển thích rebase hơn merge, vì nó giống như việc bạn tuyên bố: "Tôi muốn đặt các thay đổi của tôi lên trên những gì mà tất cả mọi người đã hoàn thành." Xét theo nghĩa này, sử dụng git pull với cờ --rebase thậm chí còn giống với lệnh svn update hơn là một cú git pull thông thường.
+
+Quy trình pull rebase phổ biến đến mức Git cung cấp sẵn một cấu hình chuyên biệt toàn cục cho nó:
+```
+git config --global branch.autosetuprebase always
+```
+
+### Git Pull Examples
+1. Hành vi mặc định (Default Behavior)  
+```
+git pull
+```
+Việc thực thi lệnh git pull mặc định hoàn toàn tương đương với chuỗi lệnh: git fetch origin HEAD và git merge HEAD (trong đó HEAD chính là tham chiếu trỏ vào nhánh hiện tại của bạn).
+
+2. Git pull trên các Remote chỉ định  
+```
+git checkout new_feature
+git pull <remote repo>
+```
+Ví dụ này đầu tiên thực hiện lệnh git checkout để chuyển sang nhánh <new_feature>. Ngay sau đó, lệnh git pull được thực thi và truyền vào tên của <remote_repo>. Hành động này sẽ hiểu ngầm là tải xuống nhánh new_feature từ <remote_repo>. Một khi quá trình tải về hoàn tất, nó sẽ tự động kích hoạt một quy trình git merge.
+
+3. Đồng bộ bằng Rebase thay vì Merge  
+Ví dụ dưới đây minh họa cách đồng bộ hóa với nhánh chính của kho chứa trung tâm bằng chiến lược rebase:
+```
+git checkout main
+git pull --rebase origin
+```
+Thao tác này đơn giản chỉ là chuyển các thay đổi cục bộ của bạn lên trên những đóng góp mà mọi người khác đã thực hiện.
+
+## Making a Pull Request
+Pull request (Yêu cầu kéo) là một tính năng giúp các lập trình viên cộng tác với nhau dễ dàng hơn khi sử dụng Bitbucket. Chúng cung cấp một giao diện web thân thiện với người dùng để thảo luận về các thay đổi được đề xuất trước khi chính thức tích hợp chúng vào dự án chính thức.
+
+Ở dạng đơn giản nhất, pull request là một cơ chế để một lập trình viên thông báo cho các thành viên trong đội rằng họ đã hoàn thành một tính năng. Khi nhánh tính năng (feature branch) đã sẵn sàng, lập trình viên sẽ gửi một pull request thông qua tài khoản Bitbucket của họ. Việc này giúp mọi người liên quan biết rằng họ cần rà soát (review) lại code và gộp (merge) nó vào nhánh chính main.
+
+Tuy nhiên, pull request không chỉ đơn thuần là một thông báo — nó là một diễn đàn chuyên dụng để thảo luận về tính năng được đề xuất. Nếu có bất kỳ vấn đề gì với các thay đổi, đồng nghiệp có thể gửi phản hồi ngay trong pull request và thậm chí tinh chỉnh tính năng bằng cách đẩy lên (push) các commit bổ sung. Toàn bộ hoạt động này được theo dõi trực tiếp ngay bên trong pull request.
+
+So với các mô hình cộng tác khác, giải pháp chính thức này cho việc chia sẻ các commit giúp quy trình làm việc trở nên hợp lý và tinh gọn hơn nhiều. SVN và Git đều có thể tự động gửi email thông báo bằng một đoạn script đơn giản; tuy nhiên, khi cần thảo luận về các thay đổi, các lập trình viên thường phải dựa vào các luồng email. Việc này có thể trở nên lộn xộn, đặc biệt là khi có các commit bổ sung tiếp theo. Pull request gom tất cả các chức năng này vào một giao diện web thân thiện ngay cạnh các kho chứa Bitbucket của bạn.
+
+### Anatomy of a Pull Request
+Khi bạn gửi một pull request, tất cả những gì bạn đang làm là yêu cầu một lập trình viên khác (ví dụ: người quản trị dự án) kéo (pull) một nhánh từ kho chứa của bạn vào kho chứa của họ. Điều này có nghĩa là bạn cần cung cấp 4 thông tin sau để tạo một pull request:
+
+1. Source repository (Kho chứa nguồn).
+
+1. Source branch (Nhánh nguồn).
+
+1. estination repository (Kho chứa đích).
+
+1. Destination branch (Nhánh đích).
+
+Nhiều giá trị trong số này sẽ được Bitbucket tự động thiết lập sẵn ở mức hợp lý. Tuy nhiên, tùy thuộc vào quy trình làm việc cộng tác của bạn, đội nhóm của bạn có thể cần phải chỉ định các giá trị khác nhau. Sơ đồ cấu trúc thường hiển thị một pull request yêu cầu gộp một nhánh tính năng vào nhánh main chính thức, nhưng cũng có rất nhiều cách khác để sử dụng pull request.
+
+### How it works
+
+Pull request có thể được sử dụng kết hợp với Quy trình nhánh tính năng (Feature Branch Workflow), Quy trình Gitflow (Gitflow Workflow), hoặc Quy trình phân nhánh bản sao (Forking Workflow). Tuy nhiên, một pull request bắt buộc phải yêu cầu có hai nhánh riêng biệt hoặc hai kho chứa riêng biệt, do đó chúng sẽ không hoạt động với Quy trình trung tâm (Centralized Workflow). Việc sử dụng pull request với mỗi quy trình này sẽ hơi khác nhau một chút, nhưng quy trình tổng quát diễn ra như sau:
+
+Lập trình viên tạo tính năng trên một nhánh chuyên dụng trong repo cục bộ của họ.
+
+Lập trình viên đẩy (push) nhánh đó lên một kho chứa Bitbucket công khai.
+
+Lập trình viên tạo và gửi một pull request thông qua Bitbucket.
+
+Toàn bộ đội nhóm tiến hành rà soát code, thảo luận và thay đổi nó.
+
+Người quản trị dự án gộp (merge) tính năng vào kho chứa chính thức và đóng pull request lại.
+
+Phần còn lại của tài liệu này mô tả cách pull request được tận dụng trong các quy trình cộng tác khác nhau.
+
+### Feature Branch Workflow With Pull Requests
+Quy trình Feature Branch sử dụng một kho chứa Bitbucket dùng chung để quản lý việc cộng tác, và các lập trình viên tạo các tính năng trên các nhánh cô lập. Tuy nhiên, thay vì gộp ngay chúng vào nhánh main, các lập trình viên nên mở một pull request để khởi xướng một cuộc thảo luận xoay quanh tính năng đó trước khi nó được tích hợp vào nền tảng code chính.
+
+Vì chỉ có duy nhất một kho chứa công khai trong Quy trình Feature Branch, nên kho chứa đích (destination repository) và kho chứa nguồn (source repository) của pull request sẽ luôn luôn giống nhau. Thông thường, lập trình viên sẽ chỉ định nhánh tính năng của họ làm nhánh nguồn và nhánh main làm nhánh đích.
+
+Sau khi nhận được pull request, người quản trị dự án phải quyết định xem sẽ xử lý thế nào. Nếu tính năng đã sẵn sàng, họ chỉ cần gộp nó vào main và đóng pull request. Nhưng nếu có vấn đề với các thay đổi được đề xuất, họ có thể đăng phản hồi vào pull request. Các commit bổ sung sau đó sẽ hiển thị ngay bên cạnh các bình luận liên quan.
+
+Bạn cũng hoàn toàn có thể gửi một pull request cho một tính năng chưa hoàn thiện. Ví dụ, nếu một lập trình viên gặp khó khăn trong việc triển khai một yêu cầu cụ thể, họ có thể gửi một pull request chứa phần công việc đang làm dở (work-in-progress). Các lập trình viên khác sau đó có thể đưa ra gợi ý ngay bên trong pull request, hoặc thậm chí tự sửa vấn đề bằng các commit bổ sung.
+
+### Gitflow Workflow With Pull Requests
+Trong Quy trình Forking, một lập trình viên sẽ đẩy một tính năng đã hoàn thành lên kho chứa công khai của riêng họ thay vì một kho chứa dùng chung. Sau đó, họ gửi một pull request để thông báo cho người quản trị dự án biết rằng nó đã sẵn sàng để rà soát.
+
+Khía cạnh thông báo của pull request đặc biệt hữu ích trong quy trình này vì người quản trị dự án không có cách nào biết được khi nào một lập trình viên khác đã thêm các commit vào kho chứa Bitbucket cá nhân của họ.
+
+Vì mỗi lập trình viên có một kho chứa công khai của riêng mình, nên kho chứa nguồn của pull request sẽ khác với kho chứa đích của nó. Kho chứa nguồn là kho chứa công khai của lập trình viên và nhánh nguồn là nhánh chứa các thay đổi được đề xuất. Nếu lập trình viên đang cố gắng gộp tính năng vào nền tảng code chính thức, thì kho chứa đích là dự án chính thức và nhánh đích là main.
+
+Pull request cũng có thể được sử dụng để cộng tác với các lập trình viên khác bên ngoài dự án chính thức. Ví dụ, nếu một lập trình viên đang cùng thực hiện một tính năng với một người bạn trong đội, họ có thể gửi một pull request với điểm đích là kho chứa Bitbucket của người bạn đó thay vì dự án chính thức. Lúc này họ sẽ dùng chung một nhánh tính năng cho cả nhánh nguồn và nhánh đích.
+
+Hai lập trình viên có thể thảo luận và phát triển tính năng ngay bên trong pull request đó. Khi họ hoàn thành, một trong hai người sẽ gửi một pull request khác yêu cầu gộp tính năng vào nhánh main chính thức của dự án. Sự linh hoạt này biến pull request trở thành một công cụ cộng tác cực kỳ mạnh mẽ trong quy trình Forking.
+
+### Example
+Ví dụ dưới đây minh họa cách pull request được sử dụng trong Quy trình Forking. Nó áp dụng tương tự cho các lập trình viên làm việc trong các đội nhóm nhỏ và cho một lập trình viên bên thứ ba đang đóng góp vào một dự án mã nguồn mở.
+
+Trong ví dụ này, Mary là một lập trình viên, và John là người quản trị dự án. Cả hai đều có kho chứa Bitbucket công khai của riêng mình, và kho chứa của John nắm giữ dự án chính thức.
+
+1. Mary fork dự án chính thức  
+Để bắt đầu làm việc trong dự án, Mary đầu tiên cần phải sao chép (fork) kho chứa Bitbucket của John. Cô ấy có thể làm điều này bằng cách đăng nhập vào Bitbucket, điều hướng đến kho chứa của John và nhấp vào nút Fork.
+
+Sau khi điền tên và mô tả cho kho chứa được fork, cô ấy sẽ có một bản sao của dự án nằm trên máy chủ từ xa của riêng mình.
+
+2. Mary clone kho chứa Bitbucket của cô ấy  
+Tiếp theo, Mary cần clone kho chứa Bitbucket mà cô ấy vừa fork về máy. Việc này sẽ cho cô ấy một bản sao làm việc của dự án trên máy tính cục bộ của mình. Cô ấy chạy câu lệnh:
+```
+git clone https://user@bitbucket.org/user/repo.git
+```
+Hãy nhớ rằng lệnh git clone sẽ tự động tạo ra một remote tên là origin trỏ ngược về kho chứa đã fork của Mary.
+
+3. Mary phát triển một tính năng mới  
+Trước khi bắt đầu viết bất kỳ đoạn code nào, Mary cần tạo một nhánh mới cho tính năng này. Nhánh này chính là nhánh sẽ được dùng làm nhánh nguồn cho pull request.
+
+```
+git checkout -b some-feature
+# Tiến hành chỉnh sửa code
+git commit -a -m "Add first draft of some feature"
+```
+Mary có thể sử dụng bao nhiêu commit tùy ý để tạo ra tính năng. Và nếu lịch sử của tính năng đó bừa bộn hơn mức cô ấy muốn, cô ấy có thể sử dụng lệnh git rebase tương tác để xóa bỏ hoặc nén gọn (squash) các commit không cần thiết. Đối với các dự án lớn, việc dọn sạch lịch sử của một tính năng giúp người quản trị dự án dễ dàng theo dõi những gì đang diễn ra trong pull request hơn rất nhiều.
+
+4. Mary push tính năng lên kho chứa Bitbucket của cô ấy  
+Sau khi tính năng hoàn tất, Mary đẩy nhánh tính năng lên kho chứa Bitbucket của riêng mình (không phải kho chứa chính thức) bằng một lệnh git push đơn giản:
+```
+git push origin some-feature
+```
+Điều này giúp các thay đổi của cô ấy sẵn có để người quản trị dự án (hoặc bất kỳ cộng tác viên nào cần quyền truy cập) có thể xem được.
+
+5. Mary tạo pull request  
+
+Sau khi Bitbucket đã nhận được nhánh tính năng của cô ấy, Mary có thể tạo pull request thông qua tài khoản Bitbucket của mình bằng cách điều hướng đến kho chứa được fork và nhấp vào nút Pull request ở góc trên cùng bên phải. Biểu mẫu xuất hiện sau đó sẽ tự động đặt kho chứa của Mary làm kho chứa nguồn, và yêu cầu cô ấy chỉ định nhánh nguồn, kho chứa đích và nhánh đích.
+
+Mary muốn gộp tính năng của mình vào nền tảng code chính, vì vậy nhánh nguồn là nhánh tính năng của cô ấy, kho chứa đích là kho chứa công khai của John, và nhánh đích là main. Cô ấy cũng cần cung cấp tiêu đề và mô tả cho pull request. Nếu có những người khác ngoài John cần phê duyệt code, cô ấy có thể điền tên họ vào trường Reviewers.
+
+Sau khi cô ấy tạo pull request, một thông báo sẽ được gửi đến John qua bảng tin Bitbucket của anh ấy và (tùy chọn) qua email.
+
+6. John rà soát (review) pull request
+
+John có thể truy cập tất cả các pull request mà mọi người đã gửi bằng cách nhấp vào tab Pull request trong kho chứa Bitbucket của chính mình. Nhấp vào pull request của Mary sẽ hiển thị cho anh ấy phần mô tả của pull request, lịch sử commit của tính năng, và một bảng so sánh thay đổi (diff) của toàn bộ nội dung bên trong.
+
+Nếu anh ấy nghĩ rằng tính năng đã sẵn sàng để gộp vào dự án, tất cả những gì anh ấy cần làm là nhấn vào nút Merge để phê duyệt pull request và gộp tính năng của Mary vào nhánh main của mình.
+
+Tuy nhiên, đối với ví dụ này, hãy giả sử John tìm thấy một lỗi nhỏ (bug) trong code của Mary và yêu cầu cô ấy sửa nó trước khi gộp vào. Anh ấy có thể đăng một bình luận tổng quát cho toàn bộ pull request, hoặc có thể chọn một commit cụ thể trong lịch sử tính năng để bình luận trực tiếp vào đó.
+
+7. Mary thêm một commit bổ sung (follow-up commit)  
+
+Nếu Mary có bất kỳ câu hỏi nào về phản hồi của John, cô ấy có thể phản hồi ngay bên trong pull request, biến nó thành một diễn đàn thảo luận cho tính năng của mình.
+
+Để sửa lỗi, Mary thêm một commit khác vào nhánh tính năng của mình và push nó lên kho chứa Bitbucket cá nhân, giống hệt như cô ấy đã làm ở lần đầu tiên. Commit này sẽ tự động được cập nhật thêm vào pull request ban đầu, và John có thể rà soát lại các thay đổi mới này ngay bên cạnh bình luận gốc của mình.
+
+8. John chấp nhận pull request
+
+Cuối cùng, John chấp nhận các thay đổi, gộp nhánh tính năng vào main, và đóng pull request lại. Tính năng hiện đã được tích hợp vào dự án chính thức, và bất kỳ lập trình viên nào khác đang làm việc trong dự án đều có thể kéo nó về kho chứa cục bộ của họ bằng lệnh git pull tiêu chuẩn.
+
+## Overview using Git branch
+Tài liệu này là một bài đánh giá chuyên sâu về lệnh git branch và thảo luận về mô hình phân nhánh tổng thể của Git. Phân nhánh (Branching) là một tính năng có sẵn trong hầu hết các hệ thống quản lý phiên bản hiện đại. Việc phân nhánh trong các hệ thống VCS khác có thể là một thao tác rất tốn kém cả về thời gian lẫn dung lượng ổ cứng. Trong Git, các nhánh là một phần không thể thiếu trong quy trình phát triển hàng ngày của bạn.
+
+Các nhánh Git về mặt bản chất là một con trỏ trỏ tới một ảnh chụp (snapshot) các thay đổi của bạn. Khi bạn muốn thêm một tính năng mới hoặc sửa một lỗi (bug) — bất kể lớn hay nhỏ — bạn đều sinh ra một nhánh mới để bao bọc các thay đổi đó. Điều này giúp ngăn chặn các đoạn code kém ổn định bị gộp vào nền tảng code chính, đồng thời mang lại cho bạn cơ hội để dọn dẹp lịch sử trước khi gộp nó vào nhánh chính.
+
+Sơ đồ trên trực quan hóa một kho chứa với hai dòng phát triển biệt lập, một dòng dành cho một tính năng nhỏ và một dòng dành cho một tính năng chạy dài hạn. Bằng cách phát triển chúng trên các nhánh, bạn không chỉ có thể làm việc song song trên cả hai tính năng mà còn giữ cho nhánh chính luôn sạch sẽ, không bị ảnh hưởng bởi các đoạn code chưa kiểm định.
+
+Cách thức triển khai phía sau các nhánh Git gọn nhẹ hơn rất nhiều so với mô hình của các hệ thống quản lý phiên bản khác. Thay vì sao chép các file từ thư mục này sang thư mục khác, Git lưu trữ một nhánh như một tham chiếu (reference) đến một commit. Theo nghĩa này, một nhánh đại diện cho ngọn của một chuỗi các commit — nó không phải là một thùng chứa (container) chứa các commit. Lịch sử của một nhánh được suy diễn ra thông qua các mối quan hệ liên kết giữa các commit.
+
+Hãy nhớ rằng các nhánh Git không giống như các nhánh SVN. Trong khi các nhánh SVN chỉ được sử dụng để ghi nhận các nỗ lực phát triển quy mô lớn thỉnh thoảng mới có, thì các nhánh Git là một phần không thể tách rời trong quy trình làm việc hàng ngày của bạn.
+
+### How it works
+Một nhánh đại diện cho một dòng phát triển độc lập. Các nhánh đóng vai trò như một sự trừu tượng hóa cho toàn bộ quy trình chỉnh sửa / đưa vào hàng chờ / commit (edit/stage/commit). Bạn có thể coi chúng là một cách để yêu cầu một thư mục làm việc, vùng đệm hàng chờ và lịch sử dự án hoàn toàn mới tinh. Các commit mới sẽ được ghi lại vào lịch sử của nhánh hiện tại, tạo ra một sự rẽ nhánh (fork) trong lịch sử của dự án.
+
+Lệnh git branch cho phép bạn tạo, liệt kê, đổi tên và xóa các nhánh. Nó không cho phép bạn chuyển đổi giữa các nhánh hoặc gắn một lịch sử đã rẽ nhánh quay trở lại làm một. Vì lý do này, git branch được tích hợp chặt chẽ với các lệnh git checkout và git merge.
+
+### Common options
+- git branch: Liệt kê tất cả các nhánh trong kho chứa của bạn. Lệnh này đồng nghĩa với git branch --list.
+
+- git branch <branch>: Tạo một nhánh mới có tên là <branch>. Lệnh này chỉ tạo chứ không tự động checkout chuyển sang nhánh mới đó.
+
+- git branch -d <branch>: Xóa nhánh được chỉ định. Đây là một thao tác "an toàn" vì Git sẽ ngăn bạn xóa nhánh nếu nó chứa các thay đổi chưa được gộp (unmerged changes).
+
+- git branch -D <branch>: Ép buộc xóa nhánh được chỉ định, bất kể nó đã được gộp hay chưa. Đây là câu lệnh cần dùng nếu bạn muốn vứt bỏ vĩnh viễn toàn bộ các commit gắn liền với một dòng phát triển cụ thể nào đó.
+
+- git branch -m <branch>: Đổi tên của nhánh hiện tại thành <branch>.
+
+- git branch -a: Liệt kê tất cả các nhánh từ xa (remote branches).
+
+### Creating branches
+Điều quan trọng cần thấu hiểu là các nhánh chỉ đơn thuần là những con trỏ trỏ đến các commit. Khi bạn tạo một nhánh, tất cả những gì Git cần làm là tạo ra một con trỏ mới, nó hoàn toàn không làm thay đổi kho chứa theo bất kỳ cách nào khác.
+
+Nếu bạn bắt đầu với một kho chứa trông như thế này:
+
+Sau đó, bạn tạo một nhánh bằng câu lệnh sau:
+```
+git branch crazy-experiment
+```
+Lịch sử kho chứa vẫn hoàn toàn giữ nguyên không đổi. Tất cả những gì bạn nhận được là một con trỏ mới tinh cùng trỏ vào cú commit hiện tại:
+
+Lưu ý rằng hành động này chỉ mới tạo ra nhánh mới. Để bắt đầu thêm các commit vào nhánh đó, bạn cần phải lựa chọn nó bằng lệnh git checkout, và sau đó mới sử dụng các lệnh git add và git commit tiêu chuẩn.
+
+### Creating remote branches
+Cho đến nay, các ví dụ trên đều minh họa cho các thao tác với nhánh cục bộ. Lệnh git branch cũng hoạt động với các nhánh từ xa. Để thao tác trên các nhánh từ xa, một remote repo phải được cấu hình và thêm vào cài đặt của repo cục bộ trước.
+
+```
+# Thêm remote repo vào cấu hình của repo cục bộ
+$ git remote add new-remote-repo https://bitbucket.com/user/repo.git
+
+# Đẩy nhánh crazy-experiment lên remote repo đó
+$ git push new-remote-repo crazy-experiment
+```
+Lệnh này sẽ đẩy một bản sao của nhánh cục bộ crazy-experiment lên kho chứa từ xa <remote>.
+
+### Deleting branches
+Một khi bạn đã hoàn thành công việc trên một nhánh và đã gộp nó vào nền tảng code chính, bạn có thể tự do xóa nhánh đó đi mà không sợ làm mất bất kỳ lịch sử nào:
+```
+git branch -d crazy-experiment
+```
+Tuy nhiên, nếu nhánh đó chưa được gộp, câu lệnh trên sẽ trả về một thông báo lỗi:
+```
+error: The branch 'crazy-experiment' is not fully merged.
+If you are sure you want to delete it, run 'git branch -D crazy-experiment'.
+```
+Cơ chế này bảo vệ bạn khỏi việc mất quyền truy cập vào toàn bộ dòng phát triển đó. Nếu bạn thực sự muốn xóa nhánh (ví dụ: đó là một cuộc thử nghiệm thất bại), bạn có thể dùng cờ chữ hoa -D:
+```
+git branch -D crazy-experiment
+```
+Lệnh này xóa nhánh bất kể trạng thái của nó và không đưa ra cảnh báo, vì vậy hãy sử dụng nó một cách khôn ngoan.
+
+Các lệnh phía trên dùng để xóa bản sao cục bộ của một nhánh. Nhánh đó có thể vẫn đang tồn tại trên các remote repos. Để xóa một nhánh từ xa, hãy thực thi lệnh sau:
+```
+git push origin --delete crazy-experiment
+```
+hoặc:
+```
+git push origin :crazy-experiment
+```
+Hành động này sẽ gửi một tín hiệu xóa đến kho chứa từ xa origin để kích hoạt việc xóa bỏ nhánh crazy-experiment ở trên mạng.
+
+## Git checkout
+
+Tài liệu này là một bài phân tích sâu về lệnh git checkout. Nó sẽ bao gồm các ví dụ sử dụng thực tế và các trường hợp biên (edge cases).
+
+Theo thuật ngữ của Git, một cú "checkout" là hành động chuyển đổi giữa các phiên bản khác nhau của một thực thể mục tiêu. Lệnh git checkout hoạt động trên ba thực thể riêng biệt: các file, các commit, và các nhánh. Bên cạnh định nghĩa về "checkout", cụm từ "checking out" thường được sử dụng phổ biến để ám chỉ hành động thực thi lệnh git checkout.
+
+Trong các chương trước về chủ đề Hủy bỏ Thay đổi, chúng ta đã thấy cách git checkout được sử dụng để xem lại các commit cũ. Trọng tâm của phần lớn tài liệu này sẽ dành riêng cho các thao tác checkout trên các nhánh (branches).
+
+**Điểm khác biệt cốt lõi:** Việc checkout một nhánh rất giống với việc checkout các commit và file cũ ở chỗ thư mục làm việc (working directory) sẽ được cập nhật để khớp với nhánh/phiên bản được chọn; tuy nhiên, các thay đổi mới sau đó sẽ được lưu lại vào lịch sử dự án — nghĩa là, đây không phải là một thao tác chỉ đọc (read-only).
+
+### Checking out branches
+Lệnh git checkout cho phép bạn điều hướng di chuyển giữa các nhánh được tạo ra bởi lệnh git branch. Việc checkout một nhánh sẽ cập nhật các file trong thư mục làm việc sao cho khớp với phiên bản được lưu trữ tại nhánh đó, đồng thời ra lệnh cho Git ghi nhận tất cả các commit mới tiếp theo lên chính nhánh này. Hãy nghĩ về nó như một cách để bạn lựa chọn dòng phát triển nào mà mình muốn tập trung làm việc.
+
+Việc sở hữu một nhánh chuyên dụng cho từng tính năng mới là một sự chuyển dịch mạnh mẽ so với quy trình làm việc truyền thống của SVN. Nó giúp cho việc thử nghiệm các ý tưởng mới trở nên vô cùng dễ dàng mà không sợ làm phá hủy các chức năng sẵn có, và giúp bạn có thể làm việc trên nhiều tính năng hoàn toàn không liên quan đến nhau cùng một lúc. Thêm vào đó, các nhánh cũng tạo điều kiện thuận lợi cho nhiều quy trình làm việc cộng tác nhóm.
+
+**Tránh nhầm lẫn:** Lệnh git checkout đôi khi có thể bị nhầm lẫn với git clone. Sự khác biệt giữa hai lệnh này là: clone chịu trách nhiệm nạp mã nguồn từ một kho chứa từ xa về máy, trong khi checkout hoạt động để chuyển đổi giữa các phiên bản code đã có sẵn trên hệ thống cục bộ.
+
+### Usage: Existing branches
+Giả định rằng kho chứa bạn đang làm việc đã có sẵn các nhánh, bạn có thể chuyển đổi qua lại giữa các nhánh này bằng git checkout. Để tìm xem có những nhánh nào đang khả dụng và tên của nhánh hiện tại là gì, hãy thực thi lệnh git branch.
+
+```
+# Xem danh sách nhánh hiện có
+$ git branch
+  main
+  another_branch
+  feature_inprogress_branch
+
+# Chuyển sang nhánh feature_inprogress_branch
+$ git checkout feature_inprogress_branch
+```
+Ví dụ trên minh họa cách xem danh sách các nhánh khả dụng bằng lệnh git branch, và chuyển sang một nhánh được chỉ định, trong trường hợp này là feature_inprogress_branch.
+
+### New branches
+git checkout hoạt động tay trong tay cùng với git branch. Lệnh git branch có thể được dùng để tạo một nhánh mới. Khi bạn muốn bắt đầu một tính năng mới, bạn tạo một nhánh mới từ nhánh main bằng lệnh git branch new_branch. Sau khi tạo xong, bạn có thể dùng lệnh git checkout new_branch để chuyển sang nhánh đó.
+
+Bên cạnh đó, lệnh git checkout tiếp nhận một tham số là -b hoạt động như một phương thức phím tắt tiện lợi giúp vừa tạo nhánh mới vừa lập tức chuyển sang nhánh đó. Bạn có thể làm việc trên nhiều tính năng trong một kho chứa duy nhất bằng cách chuyển đổi giữa chúng qua git checkout.
+
+```
+git checkout -b <new-branch>
+```
+Ví dụ trên đồng thời tạo mới và checkout sang nhánh <new-branch>. Cờ -b là một phím tắt tiện ích ra lệnh cho Git chạy git branch <new-branch> trước khi chạy git checkout <new-branch>.
+
+```
+git checkout -b <new-branch> <existing-branch>
+```
+Mặc định, lệnh git checkout -b sẽ lấy con trỏ HEAD hiện tại làm nền móng để tách nhánh mới. Tuy nhiên, bạn có thể truyền thêm một tham số nhánh tùy chọn vào sau. Ở ví dụ ngay trên, <existing-branch> được truyền vào để làm nền móng tách nhánh <new-branch> thay vì dùng con trỏ HEAD hiện tại.
+
+### Switching branches
+Chuyển đổi nhánh là một thao tác rất thẳng thắn. Việc thực thi câu lệnh sau đây sẽ chỉ định con trỏ HEAD trỏ vào ngọn đỉnh (tip) của nhánh <branchname>.
+```
+git checkout <branchname>
+```
+Git theo dõi toàn bộ lịch sử của các thao tác checkout này trong bảng nhật ký tham chiếu reflog. Bạn có thể gõ git reflog để xem lại lịch sử dịch chuyển này.
+
+### Git checkout a remote branch
+Khi cộng tác với một đội nhóm, việc sử dụng các kho chứa từ xa là điều rất phổ biến. Những kho chứa này có thể được lưu trữ dùng chung trên mạng hoặc có thể là bản sao cục bộ của một đồng nghiệp khác. Mỗi kho chứa từ xa sẽ nắm giữ một tập hợp các nhánh của riêng nó. Để có thể checkout một nhánh từ xa, trước tiên bạn bắt buộc phải nạp nội dung của nhánh đó về máy.
+```
+git fetch --all
+```
+Trong các phiên bản hiện đại của Git, bạn có thể tiến hành checkout nhánh từ xa giống hệt như cách làm với một nhánh cục bộ:
+```
+git checkout <remotebranch>
+```
+Các phiên bản Git cũ hơn đòi hỏi bạn phải tạo một nhánh mới dựa trên nhánh từ xa đó một cách tường minh:
+```
+git checkout -b <remotebranch> origin/<remotebranch>
+```
+Ngoài ra, bạn cũng có thể checkout một nhánh cục bộ mới và thực hiện reset cứng nó về commit mới nhất của nhánh từ xa:
+```
+git checkout -b <branchname>
+git reset --hard origin/<branchname>
+```
+### Detached HEADs
+Bây giờ, sau khi đã đi qua ba cách sử dụng chính của git checkout trên các nhánh, điều quan trọng tiếp theo là thảo luận về trạng thái "detached HEAD".
+
+Hãy nhớ rằng HEAD là cách Git dùng để tham chiếu đến snapshot hiện tại. Về mặt nội bộ, lệnh git checkout đơn giản chỉ cập nhật con trỏ HEAD để trỏ vào một nhánh hoặc một commit được chỉ định. Khi nó trỏ vào một nhánh, Git hoạt động bình thường, nhưng khi bạn checkout thẳng về một mã commit cụ thể, hệ thống sẽ rơi vào trạng thái "detached HEAD".
+
+Hệ thống sẽ đưa ra một cảnh báo cho bạn biết rằng mọi thứ bạn đang làm đều bị "tách rời" khỏi phần phát triển còn lại của lịch sử dự án. Nếu bạn bắt đầu phát triển một tính năng trong khi đang ở trạng thái detached HEAD, sẽ không có một nhánh nào giúp bạn bám đường để quay trở lại với nó. Khi bạn bắt buộc phải checkout sang một nhánh khác (ví dụ: để gộp tính năng của bạn vào code chung), bạn sẽ không còn bất kỳ manh mối hay tham chiếu nào để trỏ ngược lại tính năng mình vừa viết nữa:
+
+**Quy tắc cốt lõi:** Quy trình phát triển code của bạn luôn luôn phải diễn ra trên một nhánh — tuyệt đối không bao giờ được viết code tiếp trong trạng thái detached HEAD. Điều này bảo đảm rằng bạn luôn luôn sở hữu một tham chiếu để tìm lại các commit mới của mình. Tuy nhiên, nếu bạn chỉ đơn thuần là muốn lùi thời gian về để xem lại một commit cũ, thì việc bạn có đang ở trạng thái detached HEAD hay không không thực sự quan trọng.
+
+## Git merge
+
+Gộp nhánh (Merging) là cách Git đưa một lịch sử dự án đã rẽ nhánh (forked history) gắn kết lại làm một. Lệnh git merge cho phép bạn lấy các dòng phát triển độc lập được tạo ra bởi lệnh git branch và tích hợp chúng vào một nhánh duy nhất.
+
+Lưu ý tối quan trọng: Tất cả các lệnh gộp nhánh được trình bày dưới đây đều thực hiện gộp vào nhánh hiện tại (nhánh bạn đang đứng). Nhánh hiện tại sẽ được cập nhật dữ liệu để phản ánh kết quả gộp, trong khi nhánh mục tiêu (nhánh được đem đi gộp) sẽ hoàn toàn không bị ảnh hưởng. Điều này có nghĩa là git merge thường được sử dụng phối hợp cùng với git checkout để chọn nhánh nhận dữ liệu, và git branch -d để xóa bỏ nhánh mục tiêu sau khi nó đã lỗi thời.
+
+### How it works
+
+git merge sẽ kết hợp nhiều chuỗi commit lại thành một lịch sử thống nhất. Trong các kịch bản phổ biến nhất, git merge được dùng để kết hợp hai nhánh. Lệnh git merge tiếp nhận hai con trỏ commit (thường là ngọn đỉnh của hai nhánh) và tiến hành tìm kiếm một commit nền tảng chung (common base commit) giữa chúng. Một khi Git tìm thấy commit tổ tiên chung này, nó sẽ tạo ra một "commit gộp" (merge commit) mới để kết hợp các thay đổi của từng chuỗi commit lại với nhau.
+
+Giả sử chúng ta có một nhánh mới tên là feature được tách ra từ nhánh main. Bây giờ chúng ta muốn gộp nhánh feature này vào main. Việc kích hoạt lệnh gộp sẽ tích hợp nhánh chỉ định feature vào nhánh hiện tại (ở đây ta giả định là main). Git sẽ tự động xác định thuật toán gộp phù hợp.
+
+Các commit gộp (Merge commits) rất độc đáo so với các commit thông thường ở chỗ chúng có tới hai commit cha (parent commits). Khi tạo một commit gộp, Git sẽ cố gắng tự động trộn các lịch sử riêng biệt cho bạn. Nếu Git phát hiện ra một đoạn dữ liệu bị thay đổi ở cả hai lịch sử, nó sẽ không thể tự động kết hợp chúng. Tình huống này được gọi là xung đột phiên bản (version control conflict) và Git sẽ cần sự can thiệp của người dùng để tiếp tục.
+
+### Preparing to merge
+Trước khi thực hiện gộp nhánh, có một vài bước chuẩn bị cần thực hiện để đảm bảo quá trình gộp diễn ra suôn sẻ:
+
+1. Xác nhận nhánh nhận dữ liệu: Thực thi lệnh git status để đảm bảo con trỏ HEAD đang trỏ đúng vào nhánh muốn nhận dữ liệu gộp. Nếu cần, hãy gõ git checkout <receiving> để chuyển sang nhánh nhận. Trong trường hợp này, chúng ta sẽ gõ: git checkout main.
+
+1. Tải về các commit từ xa mới nhất: Hãy đảm bảo nhánh nhận và nhánh đem đi gộp đều đã được cập nhật các thay đổi mới nhất trên mạng. Thực thi lệnh git fetch để tải về các commit từ xa mới nhất. Khi lệnh fetch hoàn tất, hãy bảo đảm nhánh main có các cập nhật mới nhất bằng cách gõ git pull.
+
+Sau khi các bước chuẩn bị trên đã hoàn thành, một lệnh gộp nhánh có thể được khởi động bằng cách thực thi cú pháp: git merge <branch name> (trong đó <branch name> là tên của nhánh sẽ được đem đi gộp vào nhánh hiện tại).
+
+### Fast forward merge
+Fast-forward merge có thể xảy ra khi có một đường thẳng tuyến tính chạy liên tục từ ngọn của nhánh hiện tại đến ngọn của nhánh mục tiêu. Thay vì thực hiện gộp nhánh một cách "thực sự", tất cả những gì Git cần làm để tích hợp lịch sử chỉ là di chuyển fast forward con trỏ của nhánh hiện tại lên bằng với con trỏ ngọn của nhánh mục tiêu.
