@@ -3262,3 +3262,568 @@ Quy trình này có giúp dễ dàng hoàn tác các sai lầm và lỗi logic k
 Quy trình này có áp đặt thêm bất kỳ áp lực tư duy (cognitive overhead) không cần thiết nào lên đội nhóm không?
 
 ### Centralized workflow
+Quy trình Centralized Workflow là một mô hình tuyệt vời cho các đội nhóm đang chuyển dịch từ hệ thống SVN sang. Giống như Subversion, Centralized Workflow sử dụng một kho chứa trung tâm (central repository) duy nhất đóng vai trò là điểm tiếp nhận duy nhất cho mọi thay đổi của dự án. Thay vì gọi là nhánh trunk, nhánh phát triển mặc định trong Git được gọi là main và tất cả các thay đổi đều được commit thẳng vào nhánh này. Quy trình này không đòi hỏi bất kỳ nhánh nào khác ngoài nhánh main.
+
+Việc chuyển đổi sang một hệ thống quản lý phiên bản phân tán có vẻ là một nhiệm vụ đáng sợ, nhưng bạn không nhất thiết phải thay đổi quy trình làm việc sẵn có của mình để tận dụng lợi thế của Git. Đội nhóm của bạn có thể phát triển các dự án theo cách chính xác giống như họ từng làm với Subversion.
+
+Tuy nhiên, sử dụng Git để vận hành quy trình phát triển vẫn mang lại một vài lợi thế vượt trội so với SVN:
+
+Thứ nhất: Nó cung cấp cho mỗi lập trình viên một bản sao cục bộ hoàn chỉnh của toàn bộ dự án. Môi trường cô lập này giúp mỗi lập trình viên làm việc độc lập với tất cả các thay đổi khác — họ có thể thoải mái thêm các commit vào kho chứa cục bộ và hoàn toàn không cần bận tâm đến những tiến triển trên server cho đến khi thấy thuận tiện.
+
+Thứ hai: Nó giúp bạn tiếp cận mô hình phân nhánh và gộp nhánh cực kỳ mạnh mẽ của Git. Không giống như SVN, các nhánh Git được thiết kế để làm một cơ chế bảo hiểm an toàn trong việc tích hợp code và chia sẻ các thay đổi giữa các kho chứa.
+
+Centralized Workflow tương tự như các quy trình khác ở việc sử dụng một kho chứa lưu trữ trên máy chủ từ xa để các lập trình viên thực hiện push và pull. So với các quy trình khác, Centralized Workflow không định nghĩa bất kỳ mô hình Pull Request hoặc Forking nào. Quy trình này nhìn chung phù hợp hơn cho các đội nhóm đang di cư từ SVN sang Git hoặc các đội ngũ có quy mô nhỏ.
+
+### How it works
+
+Các lập trình viên bắt đầu bằng việc clone kho chứa trung tâm về máy. Trong bản sao cục bộ của mình, họ chỉnh sửa các file và commit các thay đổi giống hệt như khi làm với SVN; tuy nhiên, các commit mới này được lưu trữ cục bộ dưới máy — hoàn toàn tách biệt khỏi kho chứa trung tâm. Điều này cho phép lập trình viên trì hoãn việc đồng bộ hóa lên server cho đến khi họ đạt tới một mốc nghỉ thuận tiện.
+
+Để xuất bản các thay đổi lên dự án chính thức, lập trình viên "push" nhánh main cục bộ của họ lên kho chứa trung tâm. Hành động này tương đương với lệnh svn commit, ngoại trừ việc nó sẽ đẩy toàn bộ các commit cục bộ chưa có mặt trên nhánh main trung tâm lên server.
+
+### Initialize the central repository  
+
+Đầu tiên, một thành viên cần phải khởi tạo kho chứa trung tâm trên một máy chủ server. Nếu đó là một dự án mới tinh, bạn có thể khởi tạo một kho chứa trống. Ngược lại, bạn sẽ cần nhập dữ liệu từ một kho chứa Git hoặc SVN sẵn có.
+
+Các kho chứa trung tâm phải luôn luôn là các kho chứa trần (bare repositories - kho chứa không có thư mục làm việc working directory), bạn có thể khởi tạo như sau:
+
+```
+ssh user@host git init --bare /path/to/repo.git
+```
+
+Hãy đảm bảo sử dụng một tên người dùng SSH hợp lệ cho user, tên miền hoặc địa chỉ IP server cho host, và đường dẫn nơi bạn muốn lưu trữ repo cho /path/to/repo.git. Lưu ý rằng phần mở rộng .git theo quy ước được gắn thêm vào tên kho chứa để biểu thị đó là một kho chứa trần.
+
+### Hosted central repositories  
+
+Các kho chứa trung tâm thường được tạo thông qua các dịch vụ lưu trữ Git bên thứ ba như Bitbucket Cloud. Quy trình khởi tạo một kho chứa trần thảo luận ở trên sẽ được dịch vụ lưu trữ tự động xử lý. Dịch vụ lưu trữ sau đó sẽ cung cấp một địa chỉ đường link URL của kho chứa trung tâm để bạn truy cập từ kho chứa cục bộ của mình.
+
+### Clone the central repository
+
+Tiếp theo, mỗi lập trình viên tạo một bản sao cục bộ của toàn bộ dự án trên máy mình thông qua câu lệnh git clone:
+```
+git clone ssh://user@host/path/to/repo.git
+```
+Khi bạn clone một kho chứa, Git sẽ tự động tạo ngầm một phím tắt tên là origin trỏ ngược về kho chứa "cha" đó, với giả định rằng bạn sẽ muốn tương tác với nó trong chặng đường tiếp theo.
+
+### Make changes and commit  
+
+Khi kho chứa đã được clone về máy local, lập trình viên có thể thực hiện các thay đổi bằng quy trình commit tiêu chuẩn của Git: chỉnh sửa, đưa vào hàng chờ, và commit (edit, stage, commit). Nếu bạn chưa quen với khu vực hàng chờ (Staging Area), thì đây là một cách để chuẩn bị cho một commit mà không bắt buộc phải gom tất cả mọi thay đổi trong thư mục làm việc vào. Điều này giúp bạn tạo ra các commit có tính tập trung cao, ngay cả khi bạn đã thực hiện rất nhiều chỉnh sửa dưới máy local.
+```
+git status          # Xem trạng thái hiện tại của repo
+git add <some-file> # Đưa một file vào hàng chờ Staging Area
+git commit          # Chốt commit file đó dưới máy local
+```
+
+Remember rằng vì các lệnh này chỉ tạo ra các commit cục bộ dưới máy cá nhân, John có thể lặp lại quy trình này bao nhiêu lần tùy ý mà không cần lo lắng về những gì đang diễn ra trong kho chứa trung tâm. Điều này rất hữu ích cho các tính năng lớn cần được chia nhỏ thành các phần đơn giản hơn, có tính nguyên tử hơn.
+
+### Push new commits to central repository  
+
+Một khi kho chứa cục bộ đã được commit các thay đổi mới, các thay đổi này sẽ cần được push lên mạng để chia sẻ với các lập trình viên khác trong dự án:
+```
+git push origin main
+```
+Lệnh này sẽ đẩy các thay đổi mới đã commit lên kho chứa trung tâm. Khi push các thay đổi lên kho chứa trung tâm, có khả năng một lập trình viên khác đã push các cập nhật của họ lên trước đó và chứa đoạn code xung đột với các cập nhật bạn định push. Git sẽ xuất ra một thông báo chỉ thị sự xung đột này. Trong tình huống đó, bạn sẽ bắt buộc phải thực thi lệnh git pull trước. Kịch bản xung đột này sẽ được mở rộng trong phần tiếp theo.
+
+### Managing conflicts  
+
+Kho chứa trung tâm đại diện cho dự án chính thức, vì vậy lịch sử commit của nó phải được coi là bất khả xâm phạm và không thể thay đổi. Nếu các commit cục bộ của một lập trình viên bị lệch hướng rẽ nhánh so với kho chứa trung tâm, Git sẽ từ chối push các thay đổi đó vì hành động này sẽ ghi đè lên các commit chính thức của server.
+
+Trước khi lập trình viên có thể xuất bản tính năng của mình, họ cần phải tải về các commit trung tâm cập nhật và rebase các thay đổi của mình lên trên đỉnh ngọn của chúng. Việc này giống như tuyên bố: "Tôi muốn thêm các thay đổi của tôi vào những gì mà mọi người đã hoàn thành trước đó." Kết quả trả về sẽ là một lịch sử tuyến tính hoàn hảo, giống hệt như trong quy trình làm việc SVN truyền thống.
+
+Nếu các thay đổi cục bộ xung đột trực tiếp với các commit thượng nguồn, Git sẽ tạm dừng quy trình rebase và trao cho bạn cơ hội giải quyết xung đột bằng tay một cách thủ công. Điểm tuyệt vời của Git là nó sử dụng chính các lệnh git status và git add quen thuộc cho cả việc tạo commit lẫn việc giải quyết xung đột gộp nhánh. Điều này giúp các lập trình viên mới dễ dàng tự quản lý các lượt gộp của mình. Plus, nếu họ rơi vào rắc rối, Git giúp việc hủy bỏ toàn bộ quy trình rebase (git rebase --abort) để thử lại từ đầu trở nên vô cùng dễ dàng (hoặc đi tìm sự trợ giúp).
+
+### Example
+
+Hãy cùng xem một ví dụ tổng quát về cách một đội ngũ nhỏ hợp tác bằng quy trình này. Chúng sau đây sẽ thấy cách hai lập trình viên, John và Mary, có thể làm việc trên các tính năng riêng biệt và chia sẻ đóng góp của họ thông qua một kho chứa trung tâm.
+
+#### John works on his feature
+
+Trong kho chứa cục bộ của mình, John phát triển các tính năng bằng quy trình commit tiêu chuẩn: chỉnh sửa, đưa vào hàng chờ, và commit. Remember rằng vì các lệnh này chỉ tạo ra các commit cục bộ dưới máy cá nhân, John có thể lặp lại quy trình này bao nhiêu lần tùy ý mà không cần lo lắng về những gì đang diễn ra trên server trung tâm.
+
+##### Mary works on her feature
+
+Trong lúc đó, Mary cũng đang bận rộn làm việc trên tính năng của riêng mình trong kho chứa cục bộ của cô ấy bằng quy trình tương tự. Giống như John, cô ấy không cần quan tâm đến những gì đang diễn ra trong kho chứa trung tâm, và cô ấy lại càng không quan tâm John đang làm gì dưới máy của anh ấy, vì tất cả các kho chứa cục bộ đều mang tính riêng tư.
+
+#### John publishes his feature
+
+Ngay khi John hoàn thành tính năng của mình, anh ấy xuất bản các commit cục bộ lên kho chứa trung tâm để các thành viên khác có thể tiếp cận. Anh ấy thực hiện bằng lệnh git push:
+```
+git push origin main
+```
+Hãy nhớ rằng origin là kết nối từ xa tới kho chứa trung tâm mà Git đã tự động tạo ra khi John clone dự án. Tham số main ra lệnh cho Git cố gắng làm cho nhánh main của origin trông giống hệt như nhánh main cục bộ của anh ấy. Vì kho chứa trung tâm chưa từng được cập nhật kể từ ngày John clone nó về, hành động này sẽ không sinh ra bất kỳ xung đột nào và lệnh push hoạt động mượt mà như mong đợi.
+
+#### Mary tries to publish her feature
+
+Hãy cùng xem chuyện gì xảy ra nếu Mary cố gắng push tính năng của cô ấy lên sau khi John đã xuất bản thành công các thay đổi của anh ấy lên server trung tâm. Cô ấy gõ chính xác câu lệnh push:
+```
+git push origin main
+```
+Nhưng vì lịch sử cục bộ của cô ấy đã bị lệch hướng rẽ nhánh so với server trung tâm, Git sẽ thẳng thừng từ chối yêu cầu kèm theo một thông báo lỗi khá dài dòng:
+```
+error: failed to push some refs to '/path/to/repo.git'
+hint: Updates were rejected because the tip of your current branch is behind
+hint: its remote counterpart. Merge the remote changes (e.g. 'git pull')
+hint: before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+```
+Cơ chế này ngăn Mary ghi đè lên các commit chính thức. Cô ấy cần phải kéo các cập nhật của John vào kho chứa của mình, tích hợp chúng với các thay đổi cục bộ, rồi mới thử push lại.
+
+#### Mary rebases on top of John’s commit(s)
+Mary có thể sử dụng lệnh git pull để hợp nhất các thay đổi thượng nguồn vào kho chứa của mình. Lệnh này giống như svn update — nó kéo toàn bộ lịch sử commit thượng nguồn vào kho chứa local của Mary và cố gắng tích hợp nó với các commit cục bộ của cô ấy:
+```
+git pull --rebase origin main
+```
+Tùy chọn --rebase ra lệnh cho Git di chuyển toàn bộ các commit cục bộ của Mary lên trên đỉnh ngọn của nhánh main sau khi đã đồng bộ hóa nó với các thay đổi từ kho chứa trung tâm, như minh họa dưới đây:
+
+Cú pull vẫn sẽ chạy được nếu bạn lỡ quên tùy chọn này, nhưng bạn sẽ kết thúc với một commit gộp (merge commit) thừa thãi xuất hiện mỗi khi có ai đó cần đồng bộ hóa với server trung tâm. Đối với quy trình này, việc sử dụng rebase luôn luôn tốt hơn là đẻ ra một commit gộp.
+
+#### Mary resolves a merge conflict
+
+Cơ chế của rebase hoạt động bằng cách dịch chuyển từng commit cục bộ sang nhánh main đã cập nhật tại một thời điểm. Điều này có nghĩa là bạn sẽ phát hiện và xử lý các xung đột gộp nhánh trên cơ sở từng commit một, thay vì phải giải quyết tất cả chúng trong một commit gộp khổng lồ duy nhất. Việc này giúp giữ cho các commit của bạn có tính tập trung cao nhất có thể và tạo ra một lịch sử dự án sạch sẽ. Hệ quả là việc tìm ra vị trí phát sinh lỗi bug trở nên dễ dàng hơn nhiều và nếu cần thiết, bạn có thể hoàn tác (rollback) các thay đổi với mức độ ảnh hưởng tối thiểu tới dự án.
+
+Nếu Mary và John đang làm việc trên các tính năng không liên quan đến nhau, quy trình rebase sẽ rất hiếm khi sinh ra xung đột. Nhưng nếu có, Git sẽ lập tức tạm dừng việc rebase tại chính commit lỗi đó và xuất ra thông báo sau kèm theo các hướng dẫn liên quan:
+```
+CONFLICT (content): Merge conflict in <some-file>
+```
+
+Điểm tuyệt vời của Git là bất kỳ ai cũng có thể tự giải quyết xung đột của chính mình. Trong ví dụ của chúng ta, Mary chỉ cần chạy lệnh git status để xem rắc rối nằm ở đâu. Các file bị xung đột sẽ xuất hiện trong mục Unmerged paths:
+
+```
+# Unmerged paths:
+#   (use "git reset HEAD <some-file>..." to unstage)
+#   (use "git add/rm <some-file>..." as appropriate to mark resolution)
+#
+#	both modified:   <some-file>
+```
+Sau đó, cô ấy sẽ mở file ra chỉnh sửa theo đúng ý muốn. Khi đã hài lòng với kết quả, cô ấy đưa file vào hàng chờ như thường lệ và ra lệnh cho git rebase tiếp tục xử lý phần còn lại:
+```
+git add <some-file>
+git rebase --continue
+```
+
+Và đó là toàn bộ quy trình. Git sẽ di chuyển sang commit tiếp theo và lặp lại quy trình trên cho bất kỳ commit nào khác phát sinh xung đột.
+
+Nếu bạn đi đến bước này và nhận ra mình hoàn toàn hoang mang không hiểu chuyện gì đang xảy ra, đừng hoảng loạn. Chỉ cần thực thi câu lệnh sau và bạn sẽ lập tức được trả về chính xác vị trí an toàn trước khi gõ lệnh pull:
+
+```
+git rebase --abort
+```
+
+#### Mary successfully publishes her feature
+
+Sau khi hoàn tất việc đồng bộ hóa với kho chứa trung tâm, Mary sẽ có thể xuất bản các thay đổi của mình lên mạng một cách thành công:
+```
+git push origin main
+```
+### Where to go from here
+
+Như bạn có thể thấy, việc tái lập một môi trường phát triển Subversion truyền thống chỉ bằng cách sử dụng một vài câu lệnh Git là điều hoàn toàn khả thi. Điều này rất tuyệt vời cho các đội nhóm đang trong giai đoạn chuyển giao từ SVN sang, nhưng nó lại chưa tận dụng được bản chất phân tán của Git.
+
+Mô hình Centralized Workflow rất tuyệt cho các đội nhóm nhỏ. Quy trình giải quyết xung đột chi tiết ở trên có thể tạo ra một nút thắt cổ chai (bottleneck) khi đội ngũ của bạn mở rộng quy mô nhân sự lớn hơn. Nếu đội nhóm của bạn đã cảm thấy thoải mái với Centralized Workflow nhưng muốn tinh gọn hóa các nỗ lực cộng tác của mình, thì việc khám phá những lợi ích của Feature Branch Workflow chắc chắn là điều rất xứng đáng. Bằng cách dành riêng một nhánh cô lập cho từng tính năng, bạn có thể khởi xướng các cuộc thảo luận chuyên sâu xoay quanh các đoạn code mới trước khi chính thức tích hợp chúng vào dự án chung.
+
+### Other common workflows 
+
+Quy trình Centralized Workflow về cơ bản là một viên gạch nền móng để xây dựng nên các Git workflow khác. Hầu hết các quy trình Git phổ biến đều sẽ sở hữu một dạng repo trung tâm nào đó để các lập trình viên thực hiện push và pull. Dưới đây chúng ta sẽ thảo luận ngắn gọn về một số quy trình Git phổ biến khác. Những quy trình mở rộng này cung cấp các mô hình chuyên biệt hơn trong việc quản lý các nhánh phục vụ phát triển tính năng, sửa lỗi nóng, và phát hành phiên bản:
+
+#### Feature branching
+
+Feature Branching là một bước mở rộng logic của Centralized Workflow. Ý tưởng cốt lõi phía sau Feature Branch Workflow là tất cả các công việc phát triển tính năng đều phải diễn ra trên một nhánh dành riêng biệt thay vì nhánh main. Sự bao bọc này giúp nhiều lập trình viên dễ dàng làm việc trên một tính năng cụ thể mà không làm xáo trộn nền tảng code chính. Điều này cũng đồng nghĩa với việc nhánh main sẽ không bao giờ chứa code lỗi, mang lại một lợi thế khổng lồ cho các môi trường tích hợp liên tục (Continuous Integration).
+
+### gitflow workflow
+
+Mô hình Gitflow Workflow lần đầu tiên được xuất bản trong một bài đăng blog năm 2010 được đánh giá rất cao từ Vincent Driessen tại nvie. Quy trình Gitflow định nghĩa một mô hình phân nhánh nghiêm ngặt được thiết kế xung quanh việc phát hành phiên bản của dự án. Quy trình này không thêm bất kỳ khái niệm hay câu lệnh mới nào vượt ra ngoài những gì Quy trình Feature Branch đòi hỏi. Thay vào đó, nó gán các vai trò rất cụ thể cho các nhánh khác nhau và định nghĩa cách thức cũng như thời điểm chúng nên tương tác với nhau.
+
+### Forking Workflow
+
+Quy trình Forking Workflow về mặt nền tảng khác biệt hoàn toàn so với các quy trình khác được thảo luận trong tài liệu này. Thay vì sử dụng một kho chứa duy nhất trên server để làm nền tảng code "trung tâm", nó cung cấp cho mỗi lập trình viên một kho chứa riêng trên server. Điều này có nghĩa là mỗi người đóng góp sẽ sở hữu không phải một, mà là hai kho chứa Git: Một kho chứa riêng tư cục bộ dưới máy local và một kho chứa công khai nằm trên server từ xa.
+
+### Guidelines
+
+Không có một quy trình Git workflow nào là vạn năng phù hợp cho tất cả mọi người. Như đã tuyên bố, điều quan trọng là phải xây dựng một Git workflow mang lại sự gia tăng năng suất cho đội nhóm của bạn. Bên cạnh văn hóa đội ngũ, một quy trình làm việc cũng cần phải bổ trợ cho lịch trình vận hành của doanh nghiệp. Các tính năng của Git như nhánh (branches) và nhãn (tags) nên bổ trợ cho kế hoạch phát hành của doanh nghiệp. Nếu đội của bạn đang sử dụng phần mềm quản lý dự án theo dõi tác vụ, bạn có thể muốn sử dụng các nhánh có tên tương ứng với các tác vụ đang được xử lý. Thêm vào đó, có một số hướng dẫn cần cân nhắc khi quyết định chọn một quy trình làm việc là:
+
+Short-lived branches (Nhánh tuổi thọ ngắn): Một nhánh sống tách biệt khỏi nhánh sản xuất (production branch) càng lâu thì nguy cơ xảy ra xung đột gộp nhánh và các thử thách khi triển khai (deployment) càng cao. Các nhánh có tuổi thọ ngắn sẽ thúc đẩy các lượt gộp nhánh và triển khai sạch sẽ hơn.
+
+Minimize and simplify reverts (Tối thiểu và đơn giản hóa hoàn tất hoàn tác): Điều quan trọng là phải có một quy trình làm việc giúp chủ động ngăn chặn các lượt gộp nhánh mà sau đó bắt buộc phải gõ lệnh hoàn tác (revert). Một quy trình yêu cầu kiểm thử chạy thử một nhánh trước khi cho phép nó được gộp vào nhánh main là một ví dụ điển hình. Tuy nhiên, tai nạn vẫn có thể xảy ra. Do đó, việc có một quy trình cho phép hoàn tác dễ dàng mà không làm gián đoạn luồng làm việc của các thành viên khác là điều vô cùng có lợi.
+
+Match a release schedule (Khớp lịch trình phát hành): Một quy trình làm việc nên bổ trợ cho chu kỳ phát hành phát triển phần mềm của doanh nghiệp bạn. Nếu bạn lên kế hoạch phát hành sản phẩm nhiều lần trong một ngày, bạn sẽ muốn giữ cho nhánh main của mình luôn ở trạng thái cực kỳ ổn định. Nếu lịch trình phát hành của bạn ít thường xuyên hơn, bạn có thể cân nhắc việc sử dụng các nhãn Git (Git tags) để đánh dấu một nhánh gắn liền với một phiên bản cụ thể.
+
+## Git feature branch workflow
+
+Ý tưởng cốt lõi phía sau Quy trình Feature Branch Workflow là toàn bộ công việc phát triển tính năng đều phải diễn ra trên một nhánh dành riêng biệt (dedicated branch) thay vì nhánh main. Sự bao bọc cô lập này giúp nhiều lập trình viên dễ dàng làm việc trên một tính năng cụ thể mà không làm xáo trộn nền tảng code chính. Điều này cũng đồng nghĩa với việc nhánh main sẽ không bao giờ chứa code lỗi, mang lại một lợi thế khổng lồ cho các môi trường tích hợp liên tục (Continuous Integration - CI).
+
+Việc bao bọc quá trình phát triển tính năng cũng tạo điều kiện để tận dụng các Yêu cầu kéo (pull requests), vốn là một cách để khởi xướng các cuộc thảo luận xung quanh một nhánh. Chúng trao cho các lập trình viên khác cơ hội để ký duyệt phê duyệt (sign off) một tính năng trước khi nó được tích hợp vào dự án chính thức. Hoặc, nếu bạn bị mắc kẹt ở giữa một tính năng, bạn có thể mở một pull request để xin ý kiến gợi ý từ các đồng nghiệp của mình. Điểm mấu chốt là, pull request giúp đội nhóm của bạn bình luận về công việc của nhau một cách vô cùng dễ dàng.
+
+Quy trình Git Feature Branch Workflow là một quy trình có tính lắp ghép cao (composable workflow), có thể được tận dụng bởi các quy trình làm việc Git cấp cao khác. Quy trình Git Feature Branch Workflow tập trung trọng tâm vào mô hình phân nhánh (branching model focused), nghĩa là nó đóng vai trò như một khung hướng dẫn cho việc quản lý và tạo các nhánh. Các quy trình làm việc khác thì tập trung nhiều hơn vào cấu trúc repo. Quy trình Git Feature Branch Workflow có thể được tích hợp vào các quy trình khác; các mô hình Gitflow và Git Forking Workflows theo truyền thống đều sử dụng một quy trình Git Feature Branch Workflow đối với các mô hình phân nhánh của họ.
+
+### How it works
+
+Quy trình Feature Branch Workflow giả định một kho chứa trung tâm (central repository), và nhánh main đại diện cho lịch sử dự án chính thức. Thay vì commit trực tiếp trên nhánh main cục bộ của họ, các lập trình viên tạo ra một nhánh mới mỗi khi họ bắt đầu làm việc trên một tính năng mới. Các nhánh tính năng nên có những cái tên mang tính mô tả rõ ràng, ví dụ như animated-menu-items hoặc issue-#1061. Ý tưởng là gán một mục đích rõ ràng, tập trung cao độ cho từng nhánh. Git không tạo ra sự khác biệt nào về mặt kỹ thuật giữa nhánh main và các nhánh tính năng, vì vậy các lập trình viên có thể chỉnh sửa, đưa vào hàng chờ và commit các thay đổi lên một nhánh tính năng như bình thường.
+
+Thêm vào đó, các nhánh tính năng có thể (và nên) được push lên kho chứa trung tâm. Việc này giúp chia sẻ một tính năng với các lập trình viên khác mà không cần chạm vào bất kỳ đoạn code chính thức nào. Vì main là nhánh "đặc biệt" duy nhất, việc lưu trữ nhiều nhánh tính năng trên kho chứa trung tâm không hề gây ra bất kỳ vấn đề gì. Tất nhiên, đây cũng là một cách thuận tiện để sao lưu (backup) các commit cục bộ của mọi người. Dưới đây là phần đi qua từng bước về vòng đời của một nhánh tính năng.
+
+### Start with the main branch
+
+Tất cả các nhánh tính năng đều được tạo ra từ trạng thái code mới nhất của một dự án. Hướng dẫn này giả định trạng thái này được duy trì và cập nhật trong nhánh main.
+```
+git checkout main
+git fetch origin 
+git reset --hard origin/main
+```
+Lệnh này chuyển kho chứa sang nhánh main, nạp các commit mới nhất và thiết lập lại (reset) bản sao cục bộ của nhánh main để khớp chính xác với phiên bản mới nhất trên mạng.
+
+### Create a new-branch 
+
+Sử dụng một nhánh riêng biệt cho từng tính năng hoặc sự cố lỗi mà bạn xử lý. Sau khi tạo một nhánh, hãy checkout sang nó ở máy cục bộ để bất kỳ thay đổi nào bạn thực hiện sau đó đều nằm trên nhánh đó.
+```
+git checkout -b new-feature
+```
+Lệnh này thực hiện checkout một nhánh tên là new-feature dựa trên nền của nhánh main, và cờ -b ra lệnh cho Git tạo nhánh đó nếu nó chưa tồn tại.
+
+### Update, add, commit, and push changes
+
+Trên nhánh này, hãy chỉnh sửa, đưa vào hàng chờ và commit các thay đổi theo cách thông thường, xây dựng tính năng với bao nhiêu commit tùy ý. Hãy làm việc trên tính năng và tạo các commit giống như bất kỳ lúc nào bạn sử dụng Git.
+```
+git status
+git add <some-file>
+git commit
+```
+### Push feature branch to remote
+
+Việc đẩy nhánh tính năng lên kho chứa trung tâm là một ý tưởng rất tốt. Nó đóng vai trò như một bản sao lưu thuận tiện; khi cộng tác với các lập trình viên khác, hành động này sẽ cấp cho họ quyền truy cập để xem các commit trên nhánh mới.
+```
+git push -u origin new-feature
+```
+Câu lệnh này đẩy nhánh new-feature lên kho chứa trung tâm (origin), và cờ -u thiết lập nó thành một nhánh theo dõi từ xa (remote tracking branch). Sau khi thiết lập xong nhánh theo dõi, bạn có thể gọi lệnh git push mà không cần truyền thêm bất kỳ tham số nào để tự động đẩy nhánh new-feature lên server.
+
+Để nhận phản hồi về nhánh tính năng mới, hãy tạo một pull request trong một giải pháp quản lý kho chứa như Bitbucket Cloud hoặc GitHub. Từ đó, bạn có thể thêm những người rà soát (reviewers) và đảm bảo mọi thứ đều ổn thỏa trước khi gộp nhánh.
+
+### Resolve feedback
+
+Bây giờ các đồng nghiệp sẽ bình luận và phê duyệt các commit đã được push. Hãy giải quyết các bình luận của họ dưới máy local, commit và push các thay đổi được gợi ý lên hệ thống. Các cập nhật của bạn sẽ tự động xuất hiện trong pull request.
+
+### Merge your pull request
+
+Trước khi gộp nhánh, bạn có thể phải giải quyết các xung đột gộp nhánh (merge conflicts) nếu những người khác đã thực hiện các thay đổi trên repo. Khi pull request của bạn đã được phê duyệt và không còn xung đột, bạn có thể đưa code của mình vào nhánh main thông qua việc thực hiện gộp nhánh trực tiếp từ giao diện pull request trên web.
+
+### Pull requests
+
+Bên cạnh việc cô lập quá trình phát triển tính năng, các nhánh giúp cho việc thảo luận về các thay đổi thông qua pull request trở nên khả thi. Một khi ai đó hoàn thành một tính năng, họ không lập tức gộp nó vào main. Thay vào đó, họ push nhánh tính năng lên máy chủ trung tâm và gửi một pull request yêu cầu gộp các phần bổ sung của họ vào main. Điều này trao cho các lập trình viên khác cơ hội rà soát các thay đổi trước khi chúng trở thành một phần của nền tảng code chính.
+
+Rà soát code (Code review) là một lợi ích lớn của pull request, nhưng chúng thực chất được thiết kế để làm một phương thức tổng quát nhằm thảo luận về code. Bạn có thể coi pull request như một cuộc thảo luận dành riêng cho một nhánh cụ thể. Điều này có nghĩa là chúng cũng có thể được sử dụng từ rất sớm trong quy trình phát triển.
+
+Ví dụ, nếu một lập trình viên cần sự trợ giúp với một tính năng cụ thể, tất cả những gì họ cần làm là gửi một pull request. Các bên liên quan sẽ được thông báo một cách tự động, và họ sẽ có thể nhìn thấy câu hỏi nằm ngay cạnh các commit có liên quan.
+
+Một khi pull request được chấp nhận, hành động thực tế của việc xuất bản một tính năng về cơ bản tương tự như trong Centralized Workflow. Đầu tiên, bạn cần đảm bảo nhánh main cục bộ đã được đồng bộ với upstream main. Sau đó, bạn gộp nhánh tính năng vào main và push nhánh main đã cập nhật ngược trở lại kho chứa trung tâm.
+
+### Example
+
+Dưới đây là một ví dụ về loại kịch bản mà trong đó quy trình phân nhánh tính năng được sử dụng. Tình huống là một đội ngũ thực hiện rà soát code xung quanh một pull request của tính năng mới.
+
+#### Mary begins a new feature
+
+Trước khi bắt đầu phát triển một tính năng, Mary cần một nhánh cô lập để làm việc. Cô ấy yêu cầu một nhánh mới bằng câu lệnh sau:
+```
+git checkout -b marys-feature main
+```
+Lệnh này checkout một nhánh tên là marys-feature dựa trên main, và cờ -b ra lệnh cho Git tạo nhánh nếu nó chưa tồn tại. Trên nhánh này, Mary chỉnh sửa, đưa vào hàng chờ và commit các thay đổi theo cách thông thường, xây dựng tính năng của mình với số lượng commit tùy ý:
+```
+git status
+git add <some-file>
+git commit
+```
+#### Mary goes to lunch
+
+Mary thêm một vài commit vào tính năng của cô ấy suốt buổi sáng. Trước khi rời đi ăn trưa, việc push nhánh tính năng lên kho chứa trung tâm là một ý tưởng hay. Việc này đóng vai trò như một bản sao lưu thuận tiện, nhưng nếu Mary đang hợp tác với các lập trình viên khác, hành động này cũng sẽ cho họ quyền truy cập vào các commit ban đầu của cô ấy.
+```
+git push -u origin marys-feature
+```
+Lệnh này đẩy nhánh marys-feature lên kho chứa trung tâm (origin), và cờ -u thiết lập nó thành nhánh theo dõi từ xa. Sau khi thiết lập xong nhánh theo dõi, Mary có thể gọi git push mà không cần tham số nào để đẩy tính năng của mình lên.
+
+#### Mary finishes her feature
+
+Khi Mary quay trở lại sau bữa trưa, cô ấy hoàn thành tính năng của mình. Trước khi gộp nó vào main, cô ấy cần gửi một pull request để thông báo cho phần còn lại của đội biết cô ấy đã làm xong. Nhưng trước tiên, cô ấy nên đảm bảo kho chứa trung tâm đã có các commit gần đây nhất của mình:
+```
+git push
+```
+Sau đó, cô ấy gửi một pull request trong giao diện Git của mình yêu cầu gộp marys-feature vào main, và các thành viên trong đội sẽ tự động nhận được thông báo. Điểm tuyệt vời của pull request là chúng hiển thị các bình luận ngay cạnh các commit liên quan, giúp dễ dàng đặt câu hỏi về các tập hợp thay đổi cụ thể.
+
+#### Bill receives the pull request
+
+Bill nhận được pull request và xem xét nhánh marys-feature. Anh ấy quyết định muốn thực hiện một vài thay đổi trước khi tích hợp nó vào dự án chính thức, và anh ấy cùng Mary có một số cuộc thảo luận qua lại ngay trong pull request.
+
+#### Mary makes the changes
+
+Để thực hiện các thay đổi, Mary sử dụng chính xác quy trình giống như cô ấy đã làm để tạo ra phiên bản đầu tiên của tính năng. Cô ấy chỉnh sửa, đưa vào hàng chờ, commit và push các cập nhật lên kho chứa trung tâm. Toàn bộ hoạt động của cô ấy hiển thị trong pull request, và Bill vẫn có thể đưa ra các bình luận trong suốt quá trình đó.
+
+Nếu muốn, Bill hoàn toàn có thể kéo (pull) nhánh marys-feature vào kho chứa cục bộ của mình và tự tay làm việc trên đó. Bất kỳ commit nào anh ấy thêm vào cũng sẽ hiển thị trong pull request.
+
+#### Mary publishes her feature
+
+Một khi Bill đã sẵn sàng chấp nhận pull request, ai đó cần phải gộp tính năng này vào dự án ổn định (việc này có thể được thực hiện bởi Bill hoặc Mary):
+```
+git checkout main
+git pull
+git pull origin marys-feature
+git push
+```
+Quy trình này thường kết thúc bằng một commit gộp (merge commit). Một số lập trình viên thích điều này vì nó giống như một biểu tượng liên kết tính năng với phần còn lại của nền tảng code. Tuy nhiên, nếu bạn là người thiên về một lịch sử tuyến tính (linear history), bạn hoàn toàn có thể rebase tính năng lên trên đỉnh ngọn của main trước khi thực thi lệnh merge, kết quả trả về sẽ là một cú gộp tiến thẳng (fast-forward merge).
+
+Một số giao diện đồ họa (GUIs) sẽ tự động hóa quy trình chấp nhận pull request bằng cách chạy toàn bộ các câu lệnh này chỉ bằng việc nhấp vào nút “Accept”. Nếu công cụ của bạn không có, nó ít nhất cũng phải có khả năng tự động đóng pull request khi nhánh tính năng được gộp vào main.
+
+#### Meanwhile, John is doing the exact same thing
+
+Trong khi Mary và Bill đang làm việc trên nhánh marys-feature và thảo luận về nó trong pull request của cô ấy, John cũng đang thực hiện điều chính xác tương tự với nhánh tính năng của riêng anh ấy. Bằng cách cô lập các tính năng vào các nhánh riêng biệt, mọi người đều có thể làm việc độc lập, tuy nhiên việc chia sẻ các thay đổi với các lập trình viên khác khi cần thiết vẫn là điều vô cùng đơn giản.
+
+## Gitflow workflow
+
+Gitflow là một quy trình làm việc Git truyền thống (legacy workflow), ban đầu từng là một chiến lược mang tính đột phá và mới lạ để quản lý các nhánh Git. Hiện nay, Gitflow đã giảm dần mức độ phổ biến để nhường chỗ cho các quy trình dựa trên nhánh chính (trunk-based workflows) - vốn được coi là thực hành tốt nhất (best practices) cho quy trình phát triển phần mềm liên tục và DevOps hiện đại. Gitflow cũng có thể gặp nhiều thách thức khi áp dụng cùng với hệ thống CI/CD. Bài viết này sẽ chi tiết hóa Gitflow nhằm mục đích ghi nhận lịch sử.
+
+### What is Gitflow?
+
+Gitflow là một mô hình phân nhánh Git thay thế, sử dụng các nhánh tính năng (feature branches) và nhiều nhánh chính sơ cấp (primary branches). Mô hình này lần đầu tiên được xuất bản và làm cho trở nên phổ biến bởi Vincent Driessen tại nvie. So với mô hình phát triển trunk-based, Gitflow sở hữu nhiều nhánh có tuổi thọ lâu hơn và kích thước commit lớn hơn.
+
+Dưới model này, các lập trình viên tạo một nhánh tính năng và trì hoãn việc gộp nó vào nhánh chính cho đến khi tính năng đó hoàn thành hoàn toàn. Những nhánh tính năng có tuổi thọ dài này đòi hỏi sự cộng tác nhiều hơn khi gộp nhánh và có nguy cơ cao bị rẽ hướng lệch pha so với nhánh chính, đồng thời có thể gây ra các cập nhật xung đột.
+
+Gitflow có thể được sử dụng cho các dự án có chu kỳ phát hành phiên bản cố định (scheduled release cycle) và áp dụng cho thực hành tốt nhất DevOps về phân phối liên tục (continuous delivery). Quy trình này không thêm bất kỳ khái niệm hay câu lệnh mới nào vượt ra ngoài những gì Quy trình Feature Branch đòi hỏi. Thay vào đó, nó gán các vai trò rất cụ thể cho các nhánh khác nhau và định nghĩa cách thức cũng như thời điểm chúng nên tương tác với nhau.
+
+Bên cạnh các nhánh tính năng, nó sử dụng các nhánh riêng lẻ cho việc chuẩn bị, bảo trì và ghi lại các phiên bản phát hành. Tất nhiên, bạn cũng được tận dụng toàn bộ lợi ích của Quy trình Feature Branch: các pull request, các thử nghiệm cô lập và quy trình cộng tác hiệu quả hơn.
+
+### How it works
+#### Develop and main branches
+
+Thay vì chỉ sử dụng một nhánh main duy nhất, quy trình làm việc này sử dụng hai nhánh để ghi lại lịch sử của dự án. Nhánh main lưu trữ lịch sử phát hành chính thức (official release history), và nhánh develop đóng vai trò là nhánh tích hợp cho các tính năng mới. Việc gắn thẻ tag số phiên bản cho tất cả các commit trong nhánh main cũng rất tiện lợi.
+
+Bước đầu tiên là bổ sung một nhánh develop song song với nhánh main mặc định. Một cách đơn giản để thực hiện việc này là một lập trình viên tạo một nhánh develop trống cục bộ dưới máy rồi push nó lên server:
+
+```
+git branch develop
+git push -u origin develop
+```
+Nhánh này sẽ chứa toàn bộ lịch sử đầy đủ của dự án, trong khi main sẽ chứa một phiên bản rút gọn. Các lập trình viên khác lúc này nên clone kho chứa trung tâm về và tạo một nhánh theo dõi (tracking branch) cho develop.
+
+Khi sử dụng thư viện mở rộng git-flow, việc thực thi lệnh git flow init trên một repo sẵn có sẽ tự động khởi tạo nhánh develop:
+
+```
+$ git flow init
+
+Initialized empty Git repository in ~/project/.git/
+No branches exist yet. Base branches must be created now.
+Branch name for production releases: [main]
+Branch name for "next release" development: [develop]
+
+How to name your supporting branch prefixes?
+Feature branches? [feature/]
+Release branches? [release/]
+Hotfix branches? [hotfix/]
+Support branches? [support/]
+Version tag prefix? []
+
+$ git branch
+* develop
+  main
+```
+#### Feature branches
+
+Mỗi tính năng mới nên nằm trên nhánh riêng của nó, nhánh này có thể được push lên kho chứa trung tâm để sao lưu hoặc cộng tác nhóm. Tuy nhiên, thay vì tách nhánh ra từ main, các nhánh tính năng sẽ sử dụng develop làm nhánh cha của chúng. Khi một tính năng hoàn thành, nó sẽ được gộp ngược trở lại vào develop. Các tính năng tuyệt đối không bao giờ được tương tác trực tiếp với main.
+
+Lưu ý rằng các nhánh tính năng khi kết hợp với nhánh develop về mặt bản chất chính là Quy trình Feature Branch. Tuy nhiên, quy trình Gitflow không dừng lại ở đó.
+
+Các nhánh tính năng nhìn chung được tạo ra từ nhánh develop mới nhất.
+
+#### Creating a feature branch
+
+Khi không sử dụng công cụ mở rộng git-flow:
+```
+git checkout develop
+git checkout -b feature_branch
+```
+
+Khi sử dụng công cụ mở rộng git-flow:
+```
+git flow feature start feature_branch
+```
+Sau đó tiếp tục công việc của bạn và sử dụng Git như bình thường.
+#### Finishing a feature branch
+
+Khi bạn đã hoàn tất công việc phát triển trên tính năng đó, bước tiếp theo là gộp feature_branch vào develop.
+
+Khi không sử dụng công cụ mở rộng git-flow:
+```
+git checkout develop
+git merge feature_branch
+```
+Khi sử dụng công cụ mở rộng git-flow:
+```
+git flow feature finish feature_branch
+```
+Khi bạn đã hoàn tất công việc phát triển trên tính năng đó, bước tiếp theo là gộp feature_branch vào develop.
+
+Khi không sử dụng công cụ mở rộng git-flow:
+```
+git checkout develop
+git merge feature_branch
+```
+Khi sử dụng công cụ mở rộng git-flow:
+```
+git flow feature finish feature_branch
+```
+
+#### Release branches
+Một khi nhánh develop đã tích lũy đủ các tính năng cho một đợt phát hành (hoặc một ngày phát hành định sẵn đang đến gần), bạn sẽ tách một nhánh phát hành (release branch) ra từ develop. Việc tạo nhánh này sẽ khởi động chu kỳ phát hành tiếp theo, vì vậy không có tính năng mới nào được phép thêm vào kể từ thời điểm này — chỉ có các bản sửa lỗi (bug fixes), viết tài liệu hướng dẫn và các tác vụ hướng tới việc phát hành khác mới được phép đưa vào nhánh này.
+
+Một khi đã sẵn sàng để xuất bản, nhánh phát hành sẽ được gộp vào main và đánh dấu tag với một số phiên bản. Thêm vào đó, nó cũng phải được gộp ngược trở lại vào develop (vì nhánh develop có thể đã tiến triển thêm các commit khác kể từ ngày nhánh phát hành được khởi tạo).
+
+Việc sử dụng một nhánh chuyên dụng để chuẩn bị cho các đợt phát hành giúp một đội nhóm có thể trau chuốt phiên bản hiện tại trong khi một đội nhóm khác vẫn tiếp tục xây dựng các tính năng cho đợt phát hành kế tiếp. Nó cũng tạo ra các giai đoạn phát triển được định nghĩa rõ ràng (ví dụ, thật dễ dàng để tuyên bố: "Tuần này chúng ta chuẩn bị cho phiên bản 4.0," và thực sự nhìn thấy cấu trúc đó hiển thị trên kho chứa dữ liệu).
+
+Việc tạo các nhánh phát hành cũng là một thao tác phân nhánh thẳng thắn. Giống như các nhánh tính năng, các nhánh phát hành được dựa trên nền tảng của nhánh develop. Một nhánh phát hành mới có thể được tạo bằng các phương thức sau:
+
+Khi không sử dụng công cụ mở rộng git-flow:
+```
+git checkout develop
+git checkout -b release/0.1.0
+```
+Khi sử dụng công cụ mở rộng git-flow:
+```
+$ git flow release start 0.1.0
+Switched to a new branch 'release/0.1.0'
+```
+Một khi phiên bản phát hành đã sẵn sàng xuất bản, nó sẽ được gộp vào main và develop, sau đó nhánh phát hành sẽ bị xóa bỏ. Việc gộp ngược lại vào develop là cực kỳ quan trọng vì các cập nhật sửa lỗi quan trọng có thể đã được thêm vào nhánh phát hành và chúng cần phải có sẵn cho các tính năng mới sau này. Nếu tổ chức của bạn chú trọng việc rà soát code (code review), đây sẽ là vị trí lý tưởng cho một pull request.
+
+Để hoàn thành một nhánh phát hành, sử dụng các phương thức sau:
+
+Khi không sử dụng công cụ mở rộng git-flow:
+```
+git checkout main
+git merge release/0.1.0
+```
+Hoặc với công cụ mở rộng git-flow:
+```
+git flow release finish '0.1.0'
+```
+#### Hotfix branches
+
+Các nhánh bảo trì hoặc nhánh sửa lỗi nóng (hotfix branches) được sử dụng để nhanh chóng vá lỗi cho các phiên bản phát hành chính thức (production releases). Các nhánh hotfix rất giống với các nhánh phát hành và nhánh tính năng, ngoại trừ việc chúng dựa trên nền tảng của nhánh main thay vì develop. Đây là nhánh duy nhất được phép tách trực tiếp ra từ main.
+
+Ngay khi việc sửa lỗi hoàn tất, nó phải được gộp vào cả main và develop (hoặc nhánh phát hành hiện tại), và nhánh main cần được đánh dấu tag với một số phiên bản cập nhật mới.
+
+Việc có một dòng phát triển chuyên dụng cho các bản sửa lỗi giúp đội ngũ của bạn xử lý các sự cố mà không làm gián đoạn phần còn lại của quy trình làm việc hoặc phải chờ đợi chu kỳ phát hành tiếp theo. Bạn có thể coi các nhánh bảo trì giống như các nhánh phát hành đặc biệt (ad hoc release branches) làm việc trực tiếp với main. Một nhánh hotfix có thể được tạo bằng các phương thức sau:
+
+Khi không sử dụng công cụ mở rộng git-flow:
+```
+git checkout main
+git checkout -b hotfix_branch
+```
+Khi sử dụng công cụ mở rộng git-flow:
+```
+$ git flow hotfix start hotfix_branch
+```
+Tương tự như việc hoàn thành một nhánh phát hành, một nhánh hotfix sẽ được gộp vào cả main và develop.
+
+Khi không sử dụng công cụ mở rộng git-flow:
+```
+git checkout main
+git merge hotfix_branch
+git checkout develop
+git merge hotfix_branch
+git branch -d hotfix_branch
+```
+Khi sử dụng công cụ mở rộng git-flow:
+```
+git flow hotfix finish hotfix_branch
+```
+
+## Forking workflow  
+Quy trình Forking Workflow về mặt nền tảng khác biệt hoàn toàn so với các quy trình làm việc Git phổ biến khác. Thay vì sử dụng một kho chứa duy nhất trên máy chủ (server-side repository) để đóng vai trò là nền tảng code "trung tâm", nó cung cấp cho mỗi lập trình viên một kho chứa riêng trên server. Điều này có nghĩa là mỗi người đóng góp sẽ sở hữu không phải một, mà là hai kho chứa Git: Một kho chứa riêng tư cục bộ dưới máy local và một kho chứa công khai nằm trên server từ xa. Quy trình Forking Workflow thường được nhìn thấy phổ biến nhất trong các dự án mã nguồn mở công khai (public open source projects).
+
+Ưu điểm chính của Forking Workflow là các đóng góp có thể được tích hợp vào hệ thống mà không bắt buộc tất cả mọi người phải push chung vào một kho chứa trung tâm duy nhất. Các lập trình viên tiến hành push code lên kho chứa trên server của riêng họ, và chỉ duy nhất người quản trị dự án (project maintainer) mới có quyền push vào kho chứa chính thức. Điều này cho phép người quản trị chấp nhận các commit từ bất kỳ lập trình viên nào mà không cần phải cấp quyền ghi (write access) vào nền tảng code chính thức cho họ.
+
+Quy trình Forking Workflow thường tuân theo một mô hình phân nhánh dựa trên Quy trình Gitflow Workflow. Điều này có nghĩa là các nhánh tính năng hoàn chỉnh sẽ được nhắm mục tiêu để gộp vào kho chứa của người quản trị dự án gốc. Kết quả trả về là một quy trình làm việc phân tán, mang lại phương thức linh hoạt cho các đội nhóm lớn, có tính chất mở rộng tự nhiên (bao gồm cả các bên thứ ba chưa được cấp quyền tin cậy) hợp tác với nhau một cách an toàn. Điều này cũng biến nó trở thành một quy trình lý tưởng cho các dự án mã nguồn mở.
+
+### How it works
+
+Giống như các quy trình làm việc Git khác, Forking Workflow bắt đầu với một kho chứa công khai chính thức được lưu trữ trên một máy chủ server. Nhưng khi một lập trình viên mới muốn bắt đầu tham gia vào dự án, họ không tiến hành clone trực tiếp từ kho chứa chính thức đó.
+
+Thay vào đó, họ thực hiện sao chép bản sao (fork) kho chứa chính thức để tạo ra một bản sao của nó nằm trên server. Bản sao mới này phục vụ như một kho chứa công khai cá nhân của riêng họ — không có lập trình viên nào khác được phép push code vào đó, nhưng họ có thể kéo (pull) các thay đổi từ nó về. Sau khi đã tạo xong bản sao trên server, lập trình viên mới thực thi lệnh git clone để lấy một bản sao của nó về máy tính cục bộ của mình. Đây sẽ là môi trường phát triển riêng tư của họ, giống hệt như các quy trình làm việc khác.
+
+Khi họ đã sẵn sàng xuất bản một commit cục bộ, họ tiến hành push commit đó lên kho chứa công khai của riêng mình — chứ không phải kho chứa chính thức. Sau đó, họ gửi một Pull Request tới kho chứa chính thức, giúp thông báo cho người quản trị dự án biết rằng một bản cập nhật đã sẵn sàng để được tích hợp. Pull request này cũng đóng vai trò như một luồng thảo luận thuận tiện nếu có bất kỳ vấn đề gì xảy ra với đoạn code được đóng góp. Dưới đây là ví dụ từng bước chi tiết của quy trình này:
+
+Lập trình viên 'fork' một kho chứa 'chính thức' trên server. Việc này tạo ra một bản sao của riêng họ trên server.
+
+Bản sao mới trên server được clone về hệ thống máy cục bộ của họ.
+
+Một đường dẫn Git remote trỏ tới kho chứa 'chính thức' được thêm vào bản sao clone cục bộ.
+
+Một nhánh tính năng cục bộ mới được tạo ra.
+
+Lập trình viên thực hiện các thay đổi trên nhánh mới đó.
+
+Các commit mới được tạo ra cho các thay đổi này.
+
+Nhánh tính năng được push lên bản sao trên server của chính lập trình viên đó.
+
+Lập trình viên mở một Pull Request từ nhánh mới hướng tới kho chứa 'chính thức'.
+
+Pull request được phê duyệt gộp nhánh và được tích hợp vào kho chứa gốc trên server.
+
+Để tích hợp tính năng vào nền tảng code chính thức, người quản trị dự án sẽ kéo (pull) các thay đổi của người đóng góp vào kho chứa cục bộ của họ, kiểm tra kỹ để đảm bảo nó không làm hỏng dự án, gộp nó vào nhánh main cục bộ, rồi push nhánh main này lên kho chứa chính thức trên server. Đóng góp đó hiện đã trở thành một phần của dự án, và các lập trình viên khác nên tiến hành pull từ kho chứa chính thức về để đồng bộ hóa kho chứa cục bộ của mình.
+
+Điều quan trọng cần thấu hiểu là khái niệm về một kho chứa "chính thức" trong Forking Workflow đơn thuần chỉ là một sự quy ước. Trên thực tế, điều duy nhất khiến kho chứa chính thức trở nên chính thức là vì nó là kho chứa công khai của người quản trị dự án.
+
+### Forking vs cloning
+
+Cần lưu ý rằng các kho chứa được "fork" và hành động "forking" không phải là các thao tác gì quá đặc biệt. Các kho chứa được fork thực chất được tạo ra bằng lệnh git clone tiêu chuẩn. Bản fork nhìn chung là các "bản sao trên server" (server-side clones) và thường được quản lý, lưu trữ bởi một dịch vụ Git bên thứ ba như Bitbucket hoặc GitHub. Không có một câu lệnh Git độc nhất nào để tạo ra các kho chứa được fork. Thao tác clone về cơ bản là một sự sao chép của một kho chứa và lịch sử của nó.
+
+### Branching in the forking workflow  
+
+Tất cả các kho chứa công khai cá nhân này thực ra chỉ là một phương thức thuận tiện để chia sẻ các nhánh với các lập trình viên khác. Mọi người vẫn nên sử dụng các nhánh để cô lập từng tính năng riêng lẻ, giống hệt như trong Quy trình Feature Branch và Quy trình Gitflow. Khác biệt duy nhất nằm ở cách thức các nhánh đó được chia sẻ. Trong Forking Workflow, chúng được kéo (pull) vào kho chứa cục bộ của một lập trình viên khác, trong khi ở quy trình Feature Branch và Gitflow, chúng được đẩy (push) trực tiếp lên kho chứa chính thức.
+
+### Fork a repository
+
+Tất cả các lập trình viên mới tham gia vào một dự án Forking Workflow đều cần phải fork kho chứa chính thức. Như đã tuyên bố trước đó, fork chỉ là một thao tác git clone tiêu chuẩn trên server. Bạn hoàn toàn có thể làm việc này bằng cách đăng nhập SSH vào server và chạy lệnh git clone để sao chép nó sang một vị trí khác trên server. Các dịch vụ lưu trữ Git phổ biến như Bitbucket hay GitHub cung cấp tính năng fork repo giúp tự động hóa bước này trên giao diện.
+
+### Clone your fork
+
+Giả định việc sử dụng Bitbucket để lưu trữ các kho chứa này, các lập trình viên trong dự án nên có tài khoản Bitbucket riêng và họ tiến hành clone bản sao đã fork của mình bằng lệnh:
+```
+git clone https://user@bitbucket.org/user/repo.git
+```
+
+### Adding a remote
+
+Trong khi các quy trình làm việc Git khác chỉ sử dụng một remote duy nhất là origin trỏ về kho chứa trung tâm, thì Forking Workflow đòi hỏi phải có hai remote — một cái cho kho chứa chính thức, và một cái cho kho chứa cá nhân trên server của lập trình viên.
+
+Mặc dù bạn có thể đặt tên cho các remote này là bất kỳ thứ gì bạn muốn, một quy ước phổ biến là sử dụng origin làm remote cho kho chứa đã fork của bạn (tên này được tạo tự động khi bạn chạy lệnh git clone) và upstream cho kho chứa chính thức.
+
+```
+git remote add upstream https://bitbucket.org/maintainer/repo
+```
+Bạn sẽ cần phải tự tay tạo remote upstream bằng câu lệnh trên. Việc này sẽ giúp bạn dễ dàng giữ cho kho chứa cục bộ của mình luôn được cập nhật mới nhất khi dự án chính thức tiến triển. Lưu ý rằng nếu kho chứa upstream của bạn có bật chế độ xác thực (nghĩa là nó không phải mã nguồn mở hoàn toàn), bạn sẽ cần cung cấp thêm tên người dùng:
+```
+git remote add upstream https://user@bitbucket.org/maintainer/repo.git
+```
+Cấu hình này yêu cầu người dùng phải cung cấp mật khẩu hợp lệ trước khi thực hiện lệnh clone hoặc pull từ nền tảng code chính thức.
+
+### Working in a branch: making & pushing changes
+
+Trong bản sao cục bộ dưới máy của kho chứa đã fork, lập trình viên có thể chỉnh sửa code, commit các thay đổi và tạo các nhánh giống hệt như các quy trình làm việc Git khác:
+```
+git checkout -b some-feature
+# Tiến hành chỉnh sửa một số đoạn code
+git commit -a -m "Add first draft of some feature"
+```
+Toàn bộ các thay đổi của họ sẽ hoàn toàn riêng tư cho đến khi họ push nó lên kho chứa công khai của mình. Và nếu dự án chính thức có thêm những commit mới, họ có thể truy cập và nạp các commit mới đó bằng lệnh git pull:
+```
+git pull upstream main
+```
+Vì các lập trình viên luôn làm việc trên một nhánh tính năng chuyên dụng, hành động này nhìn chung sẽ kết thúc bằng một cú gộp tiến thẳng (Fast-forward merge).
+
+### Making a pull request
+
+Một khi lập trình viên đã sẵn sàng chia sẻ tính năng mới của mình, họ cần phải thực hiện hai việc.
+
+Đầu tiên, họ phải làm cho đóng góp của mình có thể tiếp cận được bởi các lập trình viên khác bằng cách push nó lên kho chứa công khai của riêng họ. Remote origin của họ đã được thiết lập sẵn từ trước, vì vậy tất cả những gì họ cần làm là gõ lệnh:
+```
+git push origin feature-branch
+```
+Hành động này lệch khỏi các quy trình khác ở chỗ con trỏ remote origin đang trỏ tới kho chứa cá nhân trên server của lập trình viên, chứ không phải nền tảng code chính thức.
+
+Thứ hai, họ cần phải thông báo cho người quản trị dự án biết rằng họ muốn gộp tính năng của mình vào nền tảng code chính thức. Bitbucket hay GitHub cung cấp một nút bấm “pull request” dẫn đến một biểu mẫu yêu cầu bạn chỉ định rõ nhánh nào bạn muốn gộp vào kho chứa chính thức. Thông thường, bạn sẽ muốn tích hợp nhánh tính năng (feature-branch) của mình vào nhánh chính main của remote thượng nguồn (upstream).  
