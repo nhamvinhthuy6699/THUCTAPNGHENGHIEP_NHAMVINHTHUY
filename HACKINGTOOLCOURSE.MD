@@ -1356,7 +1356,8 @@ python -m pip install --target="C:\Users\admin\AppData\Local\Python\pythoncore-3
 
 #### Khắc phục lỗi chính sách bảo mật bằng PowerShell
 
-Khi lệnh chụp ảnh bằng thư viện Python bị chặn bởi cơ chế *Application Control Policy*, chuyển sang sử dụng API đồ họa gốc của Windows thông qua PowerShell để bypass thiết bị phòng thủ:
+Khi lệnh chụp ảnh bằng thư viện Python bị chặn bởi cơ chế *Application Control Policy*, chuyển sang sử dụng API đồ họa gốc của Windows thông qua PowerShell để bypass thiết bị phòng thủ:  
+
 ```cmd
 powershell -c "[Reflection.Assembly]::LoadWithPartialName('System.Drawing'); [Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); \(bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; \)bmp = New-Object Drawing.Bitmap(bounds.Width, bounds.Height); \(graphics = [Drawing.Graphics]::FromImage(\)bmp); graphics.CopyFromScreen(bounds.Location, [Drawing.Point]::Empty, bounds.Size); bmp.Save('C:\Users\admin\AppData\Local\Temp\screen.png', [Drawing.Imaging.ImageFormat]::Png)"
 ```
@@ -1591,7 +1592,7 @@ analytics            (Status: 301) [Size: 730] [--> https://lms.dlu.edu.vn/analy
 auth                 (Status: 301) [Size: 730] [--> https://lms.dlu.edu.vn/auth/]
 backup               (Status: 301) [Size: 730] [--> https://lms.dlu.edu.vn/backup/]
 ```
-S
+
 ## Nikto – Quét cấu hình web server
 
 **Nikto** là công cụ dùng để kiểm tra cấu hình, phiên bản phần mềm, file nguy hiểm và các thiết lập bảo mật trên web server.
@@ -1631,3 +1632,216 @@ X-Content-Type-Options
 → Ngăn trình duyệt tự đoán kiểu nội dung của file
 ```
 
+## OWASP ZAP
+
+**OWASP ZAP** là công cụ kiểm thử bảo mật ứng dụng web, có thể thu thập đường dẫn, ghi lại request và phát hiện các vấn đề bảo mật.
+
+## Khởi động Juice Shop
+
+```bash
+sudo systemctl start docker
+sudo docker start juice-shop
+```
+
+## Khởi động OWASP ZAP
+
+```bash
+zaproxy
+```
+
+Trong giao diện ZAP chọn:
+
+```text
+Quick Start
+→ Automated Scan
+```
+
+Nhập URL:
+
+```text
+http://127.0.0.1:3000
+```
+
+Sau đó bấm:
+
+```text
+Attack
+```
+
+Kết quả thực nghiệm
+
+OWASP ZAP đã kết nối và ghi nhận thành công lưu lượng của Juice Shop.
+
+ZAP phát hiện nhiều đường dẫn và API như:
+
+```text
+/api/
+/rest/
+/ftp/
+/assets/
+/socket.io/
+```
+
+Spider đã thu thập các trang và tài nguyên của website. Tab `History` hiển thị các request sử dụng phương thức:
+
+```text
+GET
+POST
+```
+
+với các mã phản hồi:
+
+```text
+200 OK
+101 Switching Protocols
+304 Not Modified
+```
+
+Một số cảnh báo được phát hiện:
+
+```text
+Content Security Policy Header Not Set
+Missing Anti-clickjacking Header
+Cross-Domain Misconfiguration
+Application Error Disclosure
+Private IP Disclosure
+Server Leaks Version Information
+Strict-Transport-Security Header Not Set
+Timestamp Disclosure
+X-Content-Type-Options Header Missing
+```
+
+Kết quả cho thấy OWASP ZAP có thể:
+
+```text
+Thu thập đường dẫn website
+Ghi nhận request và response
+Phân tích API
+Phát hiện thiếu HTTP security header
+Phát hiện lộ thông tin máy chủ
+Phân loại cảnh báo theo mức độ rủi ro
+```
+
+## SteganoHide – Giấu và trích xuất dữ liệu trong ảnh
+
+**Steganography** là kỹ thuật che giấu dữ liệu bên trong một tệp khác nhằm làm cho người quan sát khó nhận biết rằng dữ liệu bí mật đang tồn tại.
+
+Khác với mã hóa:
+
+```text
+Mã hóa
+→ Làm nội dung không thể đọc được nếu không có khóa
+
+Steganography
+→ Che giấu sự tồn tại của nội dung bí mật
+```
+
+### Chuẩn bị file bí mật
+
+Tạo file văn bản:
+
+```bash
+echo "NOI DUNG BI MAT TRONG LAB" > ~/secret.txt
+```
+
+### Chuẩn bị ảnh cover 
+
+```text
+/home/kali/Downloads/ronaldo.jpg
+```
+
+Ảnh PNG cần được chuyển sang JPEG trước khi sử dụng.
+
+### Giấu dữ liệu vào ảnh
+
+Trong SteganoHide chọn:
+
+```text
+[1] Hide
+```
+
+Nhập file cần giấu:
+
+```text
+Enter Filename to Embed:
+/home/kali/secret.txt
+```
+
+Nhập ảnh cover:
+
+```text
+Enter Cover Filename:
+/home/kali/Downloads/ronaldo.jpg
+```
+
+Nhập passphrase hai lần giống nhau.
+
+Kết quả:
+
+```text
+embedding "/home/kali/secret.txt" in "/home/kali/Downloads/ronaldo.jpg"... done
+```
+
+Điều này cho thấy file `secret.txt` đã được nhúng thành công vào ảnh.
+
+### Kiểm tra dữ liệu đã nhúng
+
+Chạy:
+
+```bash
+steghide info /home/kali/Downloads/ronaldo.jpg
+```
+
+Chọn:
+
+```text
+y
+```
+
+và nhập đúng passphrase.
+
+Kết quả:
+
+```text
+embedded file "secret.txt":
+  size: 26.0 Byte
+  encrypted: rijndael-128, cbc
+  compressed: yes
+```
+
+### Trích xuất dữ liệu
+
+Tạo thư mục chứa kết quả:
+
+```bash
+mkdir -p ~/steg-extract
+cd ~/steg-extract
+```
+
+Trích xuất:
+
+```bash
+steghide extract \
+-sf /home/kali/Downloads/ronaldo.jpg
+```
+
+Nhập đúng passphrase.
+
+### Kết quả:
+
+```text
+wrote extracted data to "secret.txt".
+```
+
+Kiểm tra nội dung sau khi trích xuất
+
+```bash
+ls -lh
+cat secret.txt
+```
+
+Kết quả:
+
+```text
+NOI DUNG BI MAT TRONG LAB
+```
