@@ -173,7 +173,6 @@ Kiểm tra:
 ls -ld "$MOODLE_DATA_FOLDER/moodledata"
 ```
 
-
 ## 10. Tạo cấu hình Apache cho Moodle
 
 Vì Moodle 4.5.12 không có thư mục `public`, `DocumentRoot` phải trỏ thẳng vào:
@@ -227,7 +226,6 @@ Restart Apache và PHP-FPM:
 sudo systemctl restart apache2
 sudo systemctl restart php8.3-fpm
 ```
-
 
 ## 11. Chỉnh PHP 8.3 cho Moodle
 
@@ -286,7 +284,6 @@ sudo mysql -e "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, CREATE TEMPORARY TA
 sudo mysql -e "FLUSH PRIVILEGES;"
 ```
 
-
 ## 13. Cài Moodle bằng giao diện web
 
 Mở trình duyệt và truy cập:
@@ -316,7 +313,6 @@ Kiểm tra cron:
 ```
 sudo -u www-data php /var/www/html/sites/moodle/admin/cli/cron.php
 ```
-
 
 ## 15. Kiểm tra dịch vụ
 
@@ -469,6 +465,7 @@ server {
 }
 EOF
 ```
+
 ## 4. Bật site Moodle trên Nginx
 
 Tạo liên kết site:
@@ -507,6 +504,7 @@ Kết quả đúng là thấy `nginx`:
 ```text
 users:(("nginx",pid=...,fd=...))
 ```
+
 ## 6. Kiểm tra dịch vụ nếu dùng Nginx
 
 Kiểm tra Nginx:
