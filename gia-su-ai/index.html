@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gia sư AI</title>
+  <style>
+    *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#e8f1ff,#f7fbff);color:#183153;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.app{width:min(900px,100%);background:#fff;border-radius:24px;box-shadow:0 18px 55px rgba(30,78,140,.16);overflow:hidden}.header{padding:28px 32px;background:linear-gradient(135deg,#2563eb,#4f46e5);color:#fff}.header h1{margin:0 0 8px;font-size:32px}.header p{margin:0;opacity:.9}.content{display:grid;grid-template-columns:260px 1fr;min-height:520px}.sidebar{padding:24px;background:#f5f8ff;border-right:1px solid #e3e9f5}.sidebar h3{margin-top:0}.topic{width:100%;border:0;background:#fff;padding:13px 15px;margin:7px 0;border-radius:12px;text-align:left;cursor:pointer;color:#183153;box-shadow:0 3px 10px rgba(45,76,130,.07)}.topic:hover{background:#eaf1ff}.chat{display:flex;flex-direction:column;padding:24px}.messages{flex:1;overflow:auto;padding-right:5px}.msg{max-width:82%;padding:13px 16px;border-radius:16px;margin:10px 0;line-height:1.5}.bot{background:#eef4ff;border-bottom-left-radius:5px}.user{margin-left:auto;background:#2563eb;color:#fff;border-bottom-right-radius:5px}.input-row{display:flex;gap:10px;margin-top:18px}.input-row input{flex:1;padding:14px;border:1px solid #cad5e8;border-radius:12px;font-size:16px}.input-row button{border:0;background:#2563eb;color:#fff;padding:0 22px;border-radius:12px;font-weight:bold;cursor:pointer}.note{font-size:12px;color:#6b7b93;margin-top:10px}@media(max-width:700px){.content{grid-template-columns:1fr}.sidebar{border-right:0;border-bottom:1px solid #e3e9f5}.header h1{font-size:27px}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <h1>🤖 Gia sư AI thông minh</h1>
+      <p>Hỗ trợ giải thích bài học, đưa ví dụ và tạo bài tập luyện tập.</p>
+    </header>
+    <section class="content">
+      <aside class="sidebar">
+        <h3>Chủ đề gợi ý</h3>
+        <button class="topic" onclick="ask('Giải thích định luật Ôm')">⚡ Vật lý</button>
+        <button class="topic" onclick="ask('Hướng dẫn giải phương trình bậc hai')">➗ Toán học</button>
+        <button class="topic" onclick="ask('Giải thích mô hình OSI')">🌐 Tin học</button>
+        <button class="topic" onclick="ask('Cho tôi bài tập tiếng Anh cơ bản')">📘 Tiếng Anh</button>
+      </aside>
+      <div class="chat">
+        <div id="messages" class="messages">
+          <div class="msg bot">Xin chào! Tôi là gia sư AI. Bạn đang cần học hoặc ôn tập nội dung gì?</div>
+        </div>
+        <div class="input-row">
+          <input id="question" placeholder="Nhập câu hỏi của bạn..." onkeydown="if(event.key==='Enter')send()">
+          <button onclick="send()">Gửi</button>
+        </div>
+        <div class="note">Ứng dụng minh họa được tạo bằng AI phục vụ hoạt động học tập.</div>
+      </div>
+    </section>
+  </main>
+  <script>
+    const answers=[
+      'Đây là nội dung quan trọng. Trước tiên, hãy xác định khái niệm chính, sau đó áp dụng vào một ví dụ đơn giản để dễ hiểu hơn.',
+      'Tôi sẽ hướng dẫn theo 3 bước: hiểu đề bài, chọn công thức hoặc phương pháp phù hợp, rồi kiểm tra lại kết quả.',
+      'Bạn có thể ghi nhớ bằng cách chia nội dung thành các ý nhỏ và tự làm một bài tập tương tự ngay sau khi học.',
+      'Ví dụ minh họa: hãy bắt đầu từ trường hợp đơn giản nhất, sau đó thay đổi dữ kiện để quan sát kết quả.'
+    ];
+    function add(text,cls){const d=document.createElement('div');d.className='msg '+cls;d.textContent=text;document.getElementById('messages').appendChild(d);d.scrollIntoView({behavior:'smooth'});}
+    function reply(q){let a='';const s=q.toLowerCase();if(s.includes('định luật ôm')) a='Định luật Ôm: I = U/R. Trong đó I là cường độ dòng điện, U là hiệu điện thế và R là điện trở. Ví dụ U = 12V, R = 6Ω thì I = 2A.';else if(s.includes('phương trình bậc hai')) a='Phương trình bậc hai có dạng ax² + bx + c = 0. Tính Δ = b² - 4ac. Nếu Δ > 0 có hai nghiệm, Δ = 0 có nghiệm kép, Δ < 0 không có nghiệm thực.';else if(s.includes('osi')) a='Mô hình OSI gồm 7 tầng: Vật lý, Liên kết dữ liệu, Mạng, Giao vận, Phiên, Trình bày và Ứng dụng. Mỗi tầng đảm nhiệm một nhóm chức năng riêng trong quá trình truyền dữ liệu.';else if(s.includes('tiếng anh')) a='Bài tập: Chọn đáp án đúng: She ___ to school every day. A. go, B. goes, C. going. Đáp án đúng là B. goes vì chủ ngữ She ở ngôi thứ ba số ít.';else a=answers[Math.floor(Math.random()*answers.length)]+' Câu hỏi của bạn là: “'+q+'”.';setTimeout(()=>add(a,'bot'),500);}
+    function send(){const i=document.getElementById('question');const q=i.value.trim();if(!q)return;add(q,'user');i.value='';reply(q);}
+    function ask(q){document.getElementById('question').value=q;send();}
+  </script>
+</body>
+</html>
