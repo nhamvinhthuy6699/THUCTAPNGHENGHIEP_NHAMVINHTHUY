@@ -482,3 +482,225 @@ P2 XOR K2 -> C2
 
 Một bit ciphertext sai chỉ làm sai một bit plaintext tương ứng. 
 Không tự đồng bộ nếu dữ liệu bị mất hoặc thêm.
+
+# XOR – Exclusive OR
+
+XOR là một phép toán logic được thực hiện trên từng bit.
+
+Bảng XOR:
+
+| Bit A | Bit B | Kết quả |
+|---:|---:|---:|
+| 0 | 0 | 0 |
+| 0 | 1 | 1 |
+| 1 | 0 | 1 |
+| 1 | 1 | 0 |
+
+2 bit giống nhau = 0, 2 bit khác nhau = 1
+
+XOR có tính chất đặc biệt:
+
+```text
+Plaintext XOR Key = Ciphertext
+Ciphertext XOR Key = Plaintext
+```
+
+Nói cách khác, nếu XOR dữ liệu hai lần với cùng một key thì sẽ lấy lại dữ liệu ban đầu.
+
+```text
+X XOR K XOR K = X
+```
+
+Trong đó:
+
+- `X` là dữ liệu ban đầu.
+- `K` là khóa.
+- `X XOR K` là dữ liệu sau khi mã hóa.
+
+Dữ liệu ban đầu:  
+H  
+Chọn khóa:  
+A  
+Mã ASCII và nhị phân:  
+H = 72 = 01001000  
+A = 65 = 01000001  
+Thực hiện XOR:  
+
+  01001000   H
+XOR
+  01000001   A
+------------
+  00001001
+
+  => H XOR A = 09  
+
+Giải mã lại ký tự `H`
+
+Lấy ciphertext `09` XOR lại với cùng khóa `A`.
+
+THỰC HIỆN XOR  
+
+  00001001
+XOR
+  01000001
+------------
+  01001000
+
+01001000 = 72 = H
+
+09 XOR A = H 
+
+## Thực hành trên cyberchef  
+bỏ vào Recipe thêm key là A và chỉnh sang kí tự UTF8, đồng thời để sang to Hex để thực hiện 
+
+nhập kí tự Hello để xem kết quả 
+
+để giải mã ngược lại thì disable to Hex, đồng thời kéo from Hex vào. 
+
+# Caesar Cipher – Mã dịch chuyển Caesar  
+Caesar Cipher là một phương pháp mã hóa thay thế đơn giản.
+
+Mỗi chữ cái trong plaintext được dịch sang phải một số vị trí cố định trong bảng chữ cái.
+
+Ví dụ:  
+Ta có khóa key = 3  
+Dịch:  A -> D ; B -> E;... ; X -> A; Y -> B
+
+Các thành phần:  
+
+Plaintext là dữ liệu ban đầu:  
+``` 
+HELLO
+```
+
+Key:  
+Key là vị trí cần dịch trong bảng chữ cái
+
+Ciphertext:  
+Ciphertext là dữ liệu sau khi được mã hóa  
+```
+KHOOR
+```
+
+Công thức tính mã hóa:  
+C = (P + K) mod 26  
+
+Trong đó:  
+- P là giá trị của plaintext
+- K là khóa 
+- C là giá trị ciphertext 
+- mod 26 Giup quay lại đầu bảng chữ cái khi vượt quá kí tự Z 
+
+Ví dụ:  
+C = (23 + 3) mod 26
+=> 26 mod 26 = 0 
+
+Về lại giá trị = 0 => A 
+
+Công thức giải mã:  
+
+P = (C-K) mod 26 
+
+## Thực hành trên cyberchef 
+
+Kéo Rot13 vào  
+Tại ô Input nhập HELLO  
+Thiết lập ammount: 3 => KHOOR
+
+Sử dụng ROT13 Brute force:  
+Caesar Cipher chỉ có 26 khả năng dịch chuyển.
+
+Nếu không biết key, có thể thử toàn bộ:  
+Nhập KHOOR  
+
+CyberChef sẽ hiển thị nhiều kết quả ứng với các khóa khác nhau.
+
+
+# RSA 
+
+RSA là thuật toán mật mã **bất đối xứng**.
+
+RSA sử dụng một cặp khóa gồm:
+
+Public Key = Khóa công khai  
+Private key = Khóa bí mật  
+
+Trong mã hóa bảo mật thông thường:  
+Public Key -> dùng để mã hóa  
+Private Key -> dùng để giải mã 
+
+Người gửi dùng Public Key của người nhận để mã hóa
+Người nhận dùng Private Key của mình để giải mã
+
+## Các thành phần của RSA
+
+- Plaintext là dữ liệu ban đầu cần mã hóa  
+- Ciphertext là dữ liệu sau khi mã hóa bằng RSA.
+- Public Key là khóa công khai. Khóa này có thể chia sẻ cho người khác để họ mã hóa dữ liệu gửi cho chủ sở hữu khóa.
+- Private Key là khóa riêng tư. Khóa này được dùng để giải mã dữ liệu đã mã hóa bằng Public Key tương ứng.
+
+## Cách RSA được sử dụng thực tế  
+
+Dữ liệu ban đầu:  
+06092004  
+
+Nguyên lý RSA:  
+RSA sử dụng 2 khóa:  
+- Public key -> mã hóa 
+- Private key -> giải mã 
+
+## Cách thực hiện RSA
+
+ta sẽ lấy 2 số nguyên tố ngẫu nhiên để tạo khóa  
+p = 5; q = 11  
+Số nguyên tố ta chọn phải chia hết cho 1 và chính nó. 
+
+Trong RSA, p và q được tính như sau:  
+n = p * q
+n = 5 * 11 = 55 
+
+Tính φ(n):    
+φ(n) = (p - 1)(q - 1) 
+φ(n) = (5 - 1)(11 - 1)
+     = 4 × 10
+     = 40
+
+Chọn e:  
+e phải thỏa 1 < e < 40 và gcd(e,40) = 1  
+
+Ta chọn e = 3  
+Tìm d  
+Ta cần: e * d mod 40 = 1  
+vì e = 3  
+3 * d mod 40 = 1
+
+=> ta có 3 * 27 = 81  
+chia cho 40: 81 mod 40 = 1
+
+Kết quả cặp khóa:  
+Public key = (e,n) => (3,55)  
+Private key = (d,n) => (27,55)
+
+RSA yêu cầu plaintext số M phải: 0<=M<n 
+
+Mã hóa M = 9  
+Dùng public key:  
+(e,n) = (3,55)  
+
+C = M^e mod n  
+C = 9^3 mod 55 = 14 
+
+Kết quả mã hóa: 14 
+
+Giải mã:  
+Dùng private key:  
+(d,n) = (27,55)  
+Công thức:  
+M =C^d mod n => M = 14^27 mod 55  = 9 
+
+# SHA-256 - Secure Hash Algorithm 256-bit 
+
+SHA-256 là hàm băm mật mã tạo ra kết quả dài 256 bit.
+
+SHA-256 thường dùng để kiểm tra tính toàn vẹn của dữ liệu và làm thành phần trong nhiều hệ thống mật mã.  
+
